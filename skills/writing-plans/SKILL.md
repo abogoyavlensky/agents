@@ -1,6 +1,6 @@
 ---
 name: writing-plans
-description: Use when you have a spec or requirements for a multi-step task, before touching code
+description: Use when you have a spec or requirements for a multi-step task, before touching code. Triggers are "let's create a plan".
 ---
 
 # Writing Plans
@@ -13,10 +13,9 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
-**Context:** This should be run in a dedicated worktree (created by brainstorming skill).
-
-**Save plans to:** `docs/superpowers/plans/YYYY-MM-DD-<feature-name>.md`
+**Save plans to:** `docs/plans/000-<feature-name>.md`
 - (User preferences for plan location override this default)
+- The number in front is incremental and for ordering - use 000 for the first design, then 001, etc
 
 ## Scope Check
 
@@ -49,7 +48,7 @@ This structure informs the task decomposition. Each task should produce self-con
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:**: executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -107,7 +106,7 @@ git commit -m "feat: add specific feature"
 - Exact file paths always
 - Complete code in plan (not "add validation")
 - Exact commands with expected output
-- Reference relevant skills with @ syntax
+- Reference relevant skills with / syntax
 - DRY, YAGNI, TDD, frequent commits
 
 ## Plan Review Loop
@@ -128,18 +127,11 @@ After writing the complete plan:
 
 After saving the plan, offer execution choice:
 
-**"Plan complete and saved to `docs/superpowers/plans/<filename>.md`. Two execution options:**
+**"Plan complete and saved to `docs/plans/<filename>.md`. Ask if user wants to implement it now:**
 
-**1. Subagent-Driven (recommended)** - I dispatch a fresh subagent per task, review between tasks, fast iteration
-
-**2. Inline Execution** - Execute tasks in this session using executing-plans, batch execution with checkpoints
-
-**Which approach?"**
-
-**If Subagent-Driven chosen:**
-- **REQUIRED SUB-SKILL:** Use superpowers:subagent-driven-development
-- Fresh subagent per task + two-stage review
-
-**If Inline Execution chosen:**
-- **REQUIRED SUB-SKILL:** Use superpowers:executing-plans
+**If yes:**
+- **REQUIRED SUB-SKILL:** Use executing-plans skill
 - Batch execution with checkpoints for review
+
+**If no:**
+- Stop and wait for user to trigger execution later with "Let's execute the plan" or similar language. Don't proceed until they do.
