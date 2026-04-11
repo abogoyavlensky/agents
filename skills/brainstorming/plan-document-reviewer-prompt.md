@@ -1,18 +1,18 @@
-# Spec Document Reviewer Prompt Template
+# Plan Document Reviewer Prompt Template
 
-Use this template when dispatching a spec document reviewer subagent.
+Use this template when dispatching a plan document reviewer subagent.
 
-**Purpose:** Verify the spec is complete, consistent, and ready for implementation planning.
+**Purpose:** Verify the plan is complete, consistent, and ready for implementation planning.
 
-**Dispatch after:** Spec document is written to docs/superpowers/specs/
+**Dispatch after:** Plan document is written to docs/plans/
 
 ```
 Task tool (general-purpose):
-  description: "Review spec document"
+  description: "Review plan document"
   prompt: |
-    You are a spec document reviewer. Verify this spec is complete and ready for planning.
+    You are a plan document reviewer. Verify this plan is complete and ready for implementation planning.
 
-    **Spec to review:** [SPEC_FILE_PATH]
+    **Plan to review:** [PLAN_FILE_PATH]
 
     ## What to Check
 
@@ -35,7 +35,7 @@ Task tool (general-purpose):
 
     ## Output Format
 
-    ## Spec Review
+    ## Plan Review
 
     **Status:** Approved | Issues Found
 

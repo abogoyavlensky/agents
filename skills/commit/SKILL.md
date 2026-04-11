@@ -4,7 +4,7 @@ description: Commit current changes
 ---
 
 Always run code formatting be fore git commit:
-  - for Clojure projects: `bb fmt` 
+  - if available run: `bb fmt` 
 Create git commit with current changed files.
 Commit messages MUST contain just ONE LINE. 
 Commit message should answer the question: "Why"
