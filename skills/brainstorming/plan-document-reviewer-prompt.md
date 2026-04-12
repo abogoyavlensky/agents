@@ -10,7 +10,7 @@ Use this template when dispatching a plan document reviewer subagent.
 Task tool (general-purpose):
   description: "Review plan document"
   prompt: |
-    You are a plan document reviewer. Verify this plan is complete and ready for implementation planning.
+    You are a plan document reviewer. Verify this plan is complete and ready for implementation.
 
     **Plan to review:** [PLAN_FILE_PATH]
 

@@ -31,6 +31,8 @@ Before defining tasks, map out which files will be created or modified and what 
 
 ## Task Structure
 
+Default pattern (TDD). For tasks without tests (config, docs, wiring), skip test steps.
+
 ````markdown
 ### Task N: [Component Name]
 
