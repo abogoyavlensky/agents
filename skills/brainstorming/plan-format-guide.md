@@ -13,12 +13,16 @@ Every plan MUST start with this header:
 
 **Goal:** [One sentence describing what this builds]
 
-**Architecture:** [2-3 sentences about approach]
-
 **Tech Stack:** [Key technologies/libraries]
 
 ---
 ```
+
+## Design
+
+After the header, include the approved design from the brainstorming discussion. This is the full context the executor needs to understand *what* they're building and *why*, before they see the step-by-step tasks.
+
+Cover the sections that were discussed and approved: architecture, components, data flow, error handling, testing strategy — scaled to their complexity. This should read as a standalone design document, not a transcript of the conversation.
 
 ## File Structure
 
