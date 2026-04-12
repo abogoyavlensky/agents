@@ -56,4 +56,4 @@ For each task:
 ## Integration
 
 **Required workflow skills:**
-- **writing-plans** - Creates the plan this skill executes
+- **brainstorming** - Creates the plan this skill executes
