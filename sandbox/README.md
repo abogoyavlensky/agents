@@ -9,6 +9,5 @@ brew install lima
 ## Create the agent sandbox
 
 ```bash
-limactl create --name dev ./agent.yaml
+limactl create --name sandbox ./agent.yaml
 ```
-
