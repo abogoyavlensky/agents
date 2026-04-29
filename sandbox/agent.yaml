@@ -15,13 +15,13 @@ user:
 
 mounts:
   - location: "/Users/andrew/Projects/agents/skills"
-    mountPoint: "/home/andrew.guest/.claude/skills"
+    mountPoint: "/home/agent.guest/.claude/skills"
     writable: true
   - location: "/Users/andrew/Projects/agents/skills"
-    mountPoint: "/home/andrew.guest/.agents/skills"
+    mountPoint: "/home/agent.guest/.agents/skills"
     writable: true
   - location: "/Users/andrew/Projects/agents/skills"
-    mountPoint: "/home/andrew.guest/.kiro/skills"
+    mountPoint: "/home/agent.guest/.kiro/skills"
     writable: true
 
 provision:
