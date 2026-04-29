@@ -13,7 +13,16 @@ disk: "60GiB"
 user:
   name: agent
 
-mounts: []
+mounts:
+  - location: "/Users/andrew/Projects/agents/skills"
+    mountPoint: "/home/andrew.guest/.claude/skills"
+    writable: true
+  - location: "/Users/andrew/Projects/agents/skills"
+    mountPoint: "/home/andrew.guest/.agents/skills"
+    writable: true
+  - location: "/Users/andrew/Projects/agents/skills"
+    mountPoint: "/home/andrew.guest/.kiro/skills"
+    writable: true
 
 provision:
   - mode: system
