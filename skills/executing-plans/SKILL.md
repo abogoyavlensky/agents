@@ -24,9 +24,9 @@ Load plan, review critically, execute all tasks, report when complete.
 For each task:
 1. Mark as in_progress
 2. Follow each step exactly (plan has bite-sized steps)
-3. Review with subagent (use gpt-5.4 model if available)
+3. Review with subagent (use gpt-5.5 model if available)
 4. Run verifications as specified
-5. Mark as completed
+5. Mark step as completed in the plan document
 
 ## When to Stop and Ask for Help
 
@@ -52,8 +52,6 @@ For each task:
 - Don't skip verifications
 - Reference skills when plan says to
 - Stop when blocked, don't guess
-
-## Integration
-
-**Required workflow skills:**
-- **brainstorming** - Creates the plan this skill executes
+- When the plan is done:
+  - Mark the whole plan document as completed
+  - Write a short and concise summary of what was implemented and any issues encountered to the plan document at the end

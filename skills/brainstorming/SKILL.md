@@ -21,10 +21,9 @@ You MUST create a task for each of these items and complete them in order:
 2. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
 3. **Propose 2-3 approaches** — with trade-offs and your recommendation
 4. **Present design** — in sections scaled to their complexity, get user approval after each section
-5. **Write plan document** — follow plan-format-guide.md for structure; save to `docs/plans/000-<topic>-plan.md` and commit
-   - The number in front is incremental and for ordering - use 000 for the first plan, then 001, etc
-   - add to git: `git add -N docs/plans/000-<topic>-plan.md`
-6. **Plan review loop** — dispatch plan-document-reviewer subagent (see plan-document-reviewer-prompt.md) using gpt-5.4 (if available) and xhigh thinking effort with precisely crafted review context (never your session history); fix issues and re-dispatch until approved (max 3 iterations, then surface to human)
+5. **Write plan document** — follow plan-format-guide.md for structure; save to `docs/plans/YYYY-MM-DD-lite-<topic>-plan.md` and commit
+   - add to git: `git add -N docs/plans/YYYY-MM-DD-lite-<topic>-plan.md`
+6. **Plan review loop** — dispatch plan-document-reviewer subagent (see plan-document-reviewer-prompt.md) using gpt-5.5 (if available) and xhigh thinking effort with precisely crafted review context (never your session history); fix issues and re-dispatch until approved (max 3 iterations, then surface to human)
 7. **User reviews written plan** — ask user to review the plan file before proceeding
 8. **Transition to implementation** — invoke /executing-plans skill to implement the plan
 
@@ -83,7 +82,7 @@ After the design is approved, write the implementation plan document.
 
 After writing the plan document:
 
-1. Dispatch plan-document-reviewer subagent (see plan-document-reviewer-prompt.md) using gpt-5.4 (if available) and xhigh thinking effort
+1. Dispatch plan-document-reviewer subagent (see plan-document-reviewer-prompt.md) using gpt-5.5 (if available) and xhigh thinking effort
 2. If Issues Found: fix, re-dispatch, repeat until Approved
 3. If loop exceeds 3 iterations, surface to human for guidance
 
