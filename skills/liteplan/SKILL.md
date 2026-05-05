@@ -40,13 +40,13 @@ Do NOT invoke any implementation skill, write any code, scaffold any project, or
 
 **Documentation:**
 - Write the validated design to `docs/plans/YYYY-MM-DD-lite-<topic>.md`
-- Use elements-of-style:writing-clearly-and-concisely skill if available
-- Commit the design document to git
+- Use writing-clearly-and-concisely skill if available
+- First, commit the design document to git without attribution with one-line message
 
-**Implementation (if continuing):**
-- Ask: "Ready to set up for implementation?"
-- Use superpowers:using-git-worktrees to create isolated workspace
-- Use superpowers:writing-plans to create detailed implementation plan
+**"Plan approved. Want to implement it now?"**
+
+- **If yes:** Use /executing-plans skill
+- **If no:** Stop and wait for user to trigger execution later
 
 ## Key Principles
 
