@@ -48,6 +48,16 @@ provision:
         export PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH"
       fi
 
+      # git aliases
+      alias gs="git status"
+      alias gpo='git push origin HEAD'
+      alias gg='git log --graph --pretty=format:'\''%C(bold)%h%Creset%C(magenta)%d%Creset %s %C(yellow)<%an> %C(cyan)(%cr)%Creset'\'' --abbrev-commit --date=relative'
+      alias gcmp='git checkout master && git pull origin master'
+      alias gcb='git checkout -b $1'
+
+      # revdiff
+      alias rd='revdiff "$@"'
+
       # Source .bashrc for interactive setup (mise activate, aliases, etc.)
       [ -f ~/.bashrc ] && . ~/.bashrc
       EOF
@@ -63,28 +73,28 @@ provision:
       # Make mise + shims usable in this provisioning shell
       export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
 
-      # Install Node via mise (pinned). `mise use` auto-reshims on install.
-      mise use --global node@22.11.0
-
-      # AI agent CLIs via npm (uses mise-managed node).
-      # mise wraps npm and auto-reshims after `npm i -g`, so no explicit reshim needed.
-      npm install -g \
-        @anthropic-ai/claude-code \
-        @openai/codex \
-        @github/copilot
-
-      # Kiro CLI (installs into ~/.local/bin)
-      if ! command -v kiro-cli >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/kiro-cli" ]; then
-        curl -fsSL https://cli.kiro.dev/install | bash
-      fi
-
-      # Skills directories for kiro / copilot
+      # Skills directories for agents
       mkdir -p "$HOME/.claude/skills" "$HOME/.agents/skills" "$HOME/.kiro/skills"
 
-      # Homebrew (linuxbrew), non-interactive
+      # Homebrew (linuxbrew), non-interactive.
       BREW_PREFIX="/home/linuxbrew/.linuxbrew"
       if [ ! -x "$BREW_PREFIX/bin/brew" ]; then
         NONINTERACTIVE=1 /bin/bash -c \
           "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
       fi
       export PATH="$BREW_PREFIX/bin:$BREW_PREFIX/sbin:$PATH"
+
+      # AI agent CLIs and other tools
+      brew install copilot-cli
+      brew install codex
+      brew install umputun/apps/revdiff
+
+      # Claude Code via the official Linux installer
+      if ! command -v claude >/dev/null 2>&1; then
+        curl -fsSL https://claude.ai/install.sh | bash
+      fi
+
+      # Kiro CLI (installs into ~/.local/bin)
+      if ! command -v kiro-cli >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/kiro-cli" ]; then
+        curl -fsSL https://cli.kiro.dev/install | bash
+      fi
