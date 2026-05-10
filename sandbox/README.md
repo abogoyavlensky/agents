@@ -30,7 +30,8 @@ limactl stop sandbox
 limactl edit sandbox
 ```
 
-TODO: move agents repo out of `Projects` dir to not overlap mounted dirs inside the VM.
+Then, if your skills directory is outside of the `Projects` directory you mounted above, 
+add 
 
 ```bash
 mounts:
@@ -44,6 +45,15 @@ mounts:
 - location: "/Users/andrew/Projects/agents/skills"
   mountPoint: "/home/agent.guest/.kiro/skills"
   writable: true
+```
+
+Or if you have your skills dir inside the `Projects` directory, you can just 
+link it to the right place in the VM:
+
+```bash
+ln -s /workspace/Projects/agents/skills ~/.claude/skills
+ln -s /workspace/Projects/agents/skills ~/.agents/skills
+ln -s /workspace/Projects/agents/skills ~/.kiro/skills
 ```
 
 ## Aliases
