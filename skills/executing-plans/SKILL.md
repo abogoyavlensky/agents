@@ -24,7 +24,7 @@ Load plan, review critically, execute all tasks, report when complete.
 For each task:
 1. Mark as in_progress
 2. Follow each step exactly (plan has bite-sized steps)
-3. Review with subagent (use gpt-5.5 model if available)
+3. Run /code-review skill with subagent
 4. Run verifications as specified
 5. Mark step as completed in the plan document
 
