@@ -30,9 +30,13 @@ this order:
    - Use `git log --oneline <main>..HEAD` and
      `git diff <main>...HEAD`.
 3. **No explicit scope from the user**: auto-detect.
-   - If there are uncommitted changes (`git status --short`), review those:
-     `git diff HEAD` for tracked + `git ls-files --others --exclude-standard`
-     for new untracked files (read those in full).
+   - If there are uncommitted *tracked* changes, review those
+     (`git diff HEAD`). Untracked files do not count toward scope
+     detection and are not included in the review by default — they're
+     usually local scratch (build outputs, editor configs, dev tooling
+     like `.mise.toml` or `.clj-lsp/`, WIP that was never meant for
+     review). If the user wants a specific untracked file reviewed,
+     they'll name it.
    - Else if the current branch is ahead of main: review the branch
      (case 2).
    - Else: ask which commit or scope to review.
