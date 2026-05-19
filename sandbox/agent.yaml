@@ -94,6 +94,10 @@ provision:
         curl -fsSL https://claude.ai/install.sh | bash
       fi
 
+      if ! command -v opencode >/dev/null 2>&1; then
+        curl -fsSL https://opencode.ai/install | bash
+      fi
+
       # Kiro CLI (installs into ~/.local/bin)
       if ! command -v kiro-cli >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/kiro-cli" ]; then
         curl -fsSL https://cli.kiro.dev/install | bash
