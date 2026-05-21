@@ -22,7 +22,7 @@ provision:
       apt-get install -y \
         software-properties-common curl git unzip zip gnupg gnupg2 rlwrap \
         apt-transport-https ca-certificates wget bzip2 nano libssl-dev \
-        build-essential pkg-config ripgrep zlib1g-dev procps file \
+        build-essential pkg-config ripgrep zlib1g-dev procps file fzf \
         openssh-client jq gh gpg-agent iproute2
 
   - mode: user
