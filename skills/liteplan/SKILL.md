@@ -39,7 +39,7 @@ Do NOT invoke any implementation skill, write any code, scaffold any project, or
 ## After the Design
 
 **Documentation:**
-- Write the validated design to `docs/plans/YYYY-MM-DD-lite-<topic>.md`
+- Write the validated design to `docs/plans/YYYY-MM-DD-<topic>.md`
 - Use writing-clearly-and-concisely skill if available
 - First, commit the design document to git without attribution with one-line message
 
