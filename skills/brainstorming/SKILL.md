@@ -23,7 +23,7 @@ You MUST create a task for each of these items and complete them in order:
 4. **Present design** — in sections scaled to their complexity, get user approval after each section
 5. **Write plan document** — follow plan-format-guide.md for structure; save to `docs/plans/YYYY-MM-DD-<topic>.md` and commit
    - add to git: `git add -N docs/plans/YYYY-MM-DD-<topic>.md`
-6. **Plan review loop** — dispatch plan-document-reviewer subagent (see plan-document-reviewer-prompt.md) with precisely crafted review context (never your session history); fix issues and re-dispatch until approved (max 3 iterations, then surface to human)
+6. **Plan review loop** — dispatch a subagent (see plan-document-reviewer-prompt.md) with precisely crafted review context (never your session history); fix issues and re-dispatch until approved (max 3 iterations, then surface to human)
 7. **User reviews written plan** — ask user to review the plan file before proceeding
 8. **Transition to implementation** — invoke /executing-plans skill to implement the plan
 
