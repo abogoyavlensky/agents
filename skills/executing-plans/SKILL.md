@@ -24,9 +24,13 @@ Load plan, review critically, execute all tasks, report when complete.
 For each task:
 1. Mark as in_progress
 2. Follow each step exactly (plan has bite-sized steps)
-3. Run /code-review skill with subagent
-4. Run verifications as specified
-5. Mark step as completed in the plan document
+3. Kick off the `review-with-codex` skill (background) — it runs codex CLI
+   against the just-completed work for a second-opinion review. Wait for it
+   to finish before moving on (blocking checkpoint).
+4. Address any **must fix** findings codex returns. If the changes are
+   non-trivial, re-run `review-with-codex` to confirm.
+5. Run verifications as specified
+6. Mark step as completed in the plan document
 
 ## When to Stop and Ask for Help
 
