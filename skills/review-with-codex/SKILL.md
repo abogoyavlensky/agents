@@ -51,7 +51,6 @@ notify you on completion — do not poll.
 ```bash
 codex exec review \
   --skip-git-repo-check \
-  --sandbox read-only \
   --color never \
   <SCOPE_FLAG> \
   -o "$OUT" \
@@ -97,7 +96,6 @@ useful for debugging a bad review run.
 - `--uncommitted` — staged + unstaged + untracked changes.
 - `--base <branch>` — diff HEAD against the branch.
 - `--commit <sha>` — review just that commit.
-- `--sandbox read-only` — codex never writes; always keep this for reviews.
 - `--color never` — keep `$OUT` and `$LOG` clean.
 - `-o <file>` — write the agent's final message to a file.
 - `-m <model>` — override the codex model. **Leave unset by default**;
