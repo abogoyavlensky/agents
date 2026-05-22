@@ -1,15 +1,19 @@
 ---
 name: liteplan
-description: You should use this before any creative work that is not that is big in scope - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation.
+description: Use this before small or medium creative coding work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements, and design, then writes a lightweight implementation plan compatible with executing-plans.
 ---
 
-# Liteplan: Turning Ideas Into Designs
+# Liteplan: Turning Ideas Into Lightweight Plans
 
 ## Overview
 
-Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
+Help turn small ideas into fully formed designs and implementation-ready
+plans through natural collaborative dialogue.
 
-Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design in small sections (200-300 words), checking after each section whether it looks right so far.
+Start by understanding the current project context, then ask questions one
+at a time to refine the idea. Once you understand what you're building,
+present the design in small sections scaled to the work, checking after
+each section whether it looks right so far.
 
 <HARD-GATE>
 Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and the user has approved it. This applies to EVERY project regardless of perceived simplicity.
@@ -31,7 +35,8 @@ Do NOT invoke any implementation skill, write any code, scaffold any project, or
 
 **Presenting the design:**
 - Once you believe you understand what you're building, present the design
-- Break it into sections of 200-300 words
+- Break it into sections scaled to their complexity: a few sentences for
+  straightforward work, up to 200-300 words if nuanced
 - Ask after each section whether it looks right so far
 - Cover: architecture, components, data flow, error handling, testing
 - Be ready to go back and clarify if something doesn't make sense
@@ -39,9 +44,73 @@ Do NOT invoke any implementation skill, write any code, scaffold any project, or
 ## After the Design
 
 **Documentation:**
-- Write the validated design to `docs/plans/YYYY-MM-DD-<topic>.md`
+- Write the approved design and executable task list to
+  `docs/plans/YYYY-MM-DD-<topic>.md`
+- Use `../brainstorming/plan-format-guide.md` as the reference for the
+  document format, but keep the plan lightweight
 - Use writing-clearly-and-concisely skill if available
-- First, commit the design document to git without attribution with one-line message
+- First, commit the plan document to git without attribution with one-line
+  message
+
+## Plan Document Format
+
+Liteplan documents must be compatible with `executing-plans`. Use the
+same core output contract as the brainstorming plan format, without the
+brainstorming review loop.
+
+Every plan starts with:
+
+```markdown
+# [Feature Name] Implementation Plan
+
+> **For agentic workers:** Use executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** [One sentence describing what this builds]
+
+**Tech Stack:** [Key technologies/libraries]
+
+---
+```
+
+Then include these sections:
+
+- `## Design` - approved design context. Cover only the parts relevant to
+  the small task: architecture, components, data flow, error handling, and
+  testing strategy as needed.
+- `## File Structure` - exact files to create or modify, with each file's
+  responsibility. Keep this brief when only one or two files are involved.
+- `## Implementation Steps` - bite-sized `### Task N:` sections with
+  checkbox steps that `executing-plans` can mark complete.
+
+Default task shape:
+
+```markdown
+### Task N: [Specific task name]
+
+**Files:**
+- Create: `exact/path/to/new-file.ext`
+- Modify: `exact/path/to/existing-file.ext`
+- Test: `exact/path/to/test-file.ext`
+
+- [ ] **Step 1: Write or update the focused test**
+  Describe expected behavior.
+
+- [ ] **Step 2: Run the focused test**
+  Run: `<exact test command>`
+  Expected: `<expected result>`
+
+- [ ] **Step 3: Implement the change**
+  Describe the minimal implementation and key constraints.
+
+- [ ] **Step 4: Run verification**
+  Run: `<exact verification command>`
+  Expected: `<expected result>`
+```
+
+For docs-only, config-only, or wiring-only work, skip irrelevant TDD
+steps, but still include exact files, checkbox steps, and verification.
+Do not inline full code in the plan; describe the change clearly enough
+for an executor to implement it.
 
 **"Plan approved. Want to implement it now?"**
 

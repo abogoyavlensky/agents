@@ -76,7 +76,7 @@ After the design is approved, write the implementation plan document.
 - Break work into bite-sized tasks with clear steps (test, implement, verify, commit)
 - Describe what to implement clearly, but don't inline full code — the executor can write code from clear descriptions
 - Exact file paths, exact commands, expected outputs
-- DRY, YAGNI, TDD, frequent commits
+- DRY, YAGNI, frequent commits
 
 ## Plan Review Loop
 
