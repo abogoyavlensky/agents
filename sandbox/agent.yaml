@@ -37,21 +37,22 @@ provision:
       # Login shell profile: PATH for mise shims, ~/.local/bin (kiro), linuxbrew;
       # source .bashrc so interactive features (mise activate) also load.
       cat > "$HOME/.bash_profile" <<'EOF'
-      # mise-managed tools (shims must be on PATH for non-interactive shells)
-      export PATH="$HOME/.local/share/mise/shims:$PATH"
-
-      # User-local binaries (kiro-cli, mise itself, etc.)
-      export PATH="$HOME/.local/bin:$PATH"
-
       # Homebrew (linuxbrew)
       if [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
         export PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH"
       fi
 
+      # User-local binaries (kiro-cli, mise itself, etc.)
+      export PATH="$HOME/.local/bin:$PATH"
+
+      # mise-managed tools (shims must be on PATH for non-interactive shells)
+      export PATH="$HOME/.local/share/mise/shims:$PATH"
+
       # git aliases
       alias gs="git status"
       alias gpo='git push origin HEAD'
       alias gg='git log --graph --pretty=format:'\''%C(bold)%h%Creset%C(magenta)%d%Creset %s %C(yellow)<%an> %C(cyan)(%cr)%Creset'\'' --abbrev-commit --date=relative'
+      alias gcam='git commit -v -am'
       alias gcmp='git checkout master && git pull origin master'
       alias gcb='git checkout -b $1'
 
@@ -65,11 +66,13 @@ provision:
       # Interactive bash: mise activate + same PATH guards (idempotent appends)
       grep -q 'mise activate bash' "$HOME/.bashrc" || \
         echo 'eval "$($HOME/.local/bin/mise activate bash)"' >> "$HOME/.bashrc"
-      grep -q 'mise/shims' "$HOME/.bashrc" || \
-        echo 'export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
       grep -q 'linuxbrew/.linuxbrew/bin' "$HOME/.bashrc" || \
         echo 'export PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH"' >> "$HOME/.bashrc"
-
+      grep -q 'mise/shims' "$HOME/.bashrc" || \
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+      grep -q 'mise/shims' "$HOME/.bashrc" || \
+        echo 'export PATH="$HOME/.local/share/mise/shims:$PATH"' >> "$HOME/.bashrc"
+      
       # Make mise + shims usable in this provisioning shell
       export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
 
