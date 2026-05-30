@@ -24,7 +24,7 @@ You MUST create a task for each of these items and complete them in order:
 5. **Write plan document** — follow plan-format-guide.md for structure; save to `docs/plans/YYYY-MM-DD-<topic>.md` and commit
    - add to git: `git add -N docs/plans/YYYY-MM-DD-<topic>.md`
 6. **Plan review loop** — dispatch a subagent (see plan-document-reviewer-prompt.md) with precisely crafted review context (never your session history); fix issues and re-dispatch until approved (max 3 iterations, then surface to human)
-7. **User reviews written plan** — ask user to review the plan file before proceeding
+7. **Commit plan** - commit the plan document to git with a clear one-line message without attribution
 8. **Transition to implementation** — invoke /executing-plans skill to implement the plan
 
 ## The Process
@@ -90,19 +90,11 @@ After writing the plan document:
 - Same agent that wrote the plan fixes it (preserves context)
 - Reviewers are advisory — explain disagreements if you believe feedback is incorrect
 
-## User Review Gate
-
-After the plan review loop passes, ask the user to review the written plan before proceeding:
-
-> "Plan written and committed to `<path>`"
-
-Wait for the user's response. If they request changes, make them and re-run the plan review loop. Only proceed once the user approves.
-
 ## Execution Handoff
 
 After the user approves the plan, offer execution choice:
 
-**"Plan approved. Want to implement it now?"**
+**"Plan committed. Want to implement it now?"**
 
 - **If yes:** Use /executing-plans skill
 - **If no:** Stop and wait for user to trigger execution later
