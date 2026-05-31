@@ -51,11 +51,16 @@ notify you on completion — do not poll.
 ```bash
 codex exec review \
   --skip-git-repo-check \
-  --color never \
+  --dangerously-bypass-approvals-and-sandbox \
   <SCOPE_FLAG> \
   -o "$OUT" \
   > "$LOG" 2>&1
 ```
+
+`--dangerously-bypass-approvals-and-sandbox` is what makes a background run
+work: `codex exec review` is read-only, but without it codex can block on an
+approval/sandbox prompt with no TTY and the background job hangs until timeout.
+Safe here precisely because the review never writes.
 
 Where `<SCOPE_FLAG>` is exactly one of:
 
@@ -65,7 +70,23 @@ Where `<SCOPE_FLAG>` is exactly one of:
 
 Optional positional prompt at the end for focused instructions, e.g.
 `"Pay special attention to the new auth middleware in pkg/auth/"`. Keep it
-short; codex has a built-in review prompt.
+short; codex has a built-in review prompt. **Caveat (see flag compatibility
+below): some codex versions reject a positional PROMPT together with
+`--uncommitted`.** If you need a focused prompt, pair it with `--base`/`--commit`,
+or drop the prompt and rely on codex's built-in review prompt for the
+uncommitted case.
+
+> **Flag compatibility — verify before assuming.** Codex CLI flags vary by
+> version (checked against `codex-cli 0.135.0`). Two gotchas seen in practice:
+> - `--color never` is **rejected** (`unexpected argument '--color'`). Don't
+>   pass it. `-o` already writes a clean final message; ANSI in `$LOG` is
+>   harmless.
+> - A positional `PROMPT` **cannot** be combined with `--uncommitted`
+>   (`the argument '--uncommitted' cannot be used with '[PROMPT]'`).
+>
+> If a run fails with exit code 2 and an "unexpected/incompatible argument"
+> message in `$LOG`, run `codex exec review --help`, drop or swap the offending
+> flag, and re-invoke — don't keep retrying the same command.
 
 Tell the user: "Codex review started in the background (scope: …). I'll
 surface findings when it finishes." Then continue with whatever's next —
@@ -93,10 +114,14 @@ useful for debugging a bad review run.
 
 ## Flags worth knowing
 
-- `--uncommitted` — staged + unstaged + untracked changes.
+- `--uncommitted` — staged + unstaged + untracked changes. (Cannot be combined
+  with a positional PROMPT on some versions — see flag compatibility above.)
 - `--base <branch>` — diff HEAD against the branch.
 - `--commit <sha>` — review just that commit.
-- `--color never` — keep `$OUT` and `$LOG` clean.
+- `--skip-git-repo-check` — allow running outside a strict git check.
+- `--dangerously-bypass-approvals-and-sandbox` — required for unattended
+  background runs (no TTY for approval prompts); safe because review is
+  read-only.
 - `-o <file>` — write the agent's final message to a file.
 - `-m <model>` — override the codex model. **Leave unset by default**;
   codex uses what's configured in `~/.codex/config.toml`. Only pass if the
