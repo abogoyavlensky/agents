@@ -71,11 +71,12 @@ You MUST create a task for each of these items and complete them in order:
 After the design is approved, write the implementation plan document.
 
 - Follow the format and structure in plan-format-guide.md
-- Include the approved design in the plan — architecture, components, data flow, error handling, testing strategy. The plan should be self-contained so the executor has full context.
+- Include the approved design in the plan - architecture, components, data flow, error handling, testing strategy. The plan should be self-contained so the executor has full context.
 - Map out the file structure first — which files will be created or modified
 - Break work into bite-sized tasks with clear steps (test, implement, verify, commit)
-- Describe what to implement clearly, but don't inline full code — the executor can write code from clear descriptions
+- Describe what to implement clearly, but don't inline full code - the executor can write code from clear descriptions
 - Exact file paths, exact commands, expected outputs
+- Use /writing-clearly skill if available
 - DRY, YAGNI, frequent commits
 
 ## Plan Review Loop
@@ -107,3 +108,4 @@ After the user approves the plan, offer execution choice:
 - **Explore alternatives** - Always propose 2-3 approaches before settling
 - **Incremental validation** - Present design, get approval before moving on
 - **Be flexible** - Go back and clarify when something doesn't make sense
+- Use /writing-clearly skill if available for all READMEs and docs

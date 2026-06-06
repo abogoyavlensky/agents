@@ -134,4 +134,4 @@ After user selection:
 - Keep descriptions concise and actionable
 - MUST use AskUserQuestion tool for confirmation (not plain text questions)
 - If no knowledge found, exit early without asking
-- For ALL text you MUST use /writing-clearly-and-concisely skill
+- For ALL text you MUST use /writing-clearly skill

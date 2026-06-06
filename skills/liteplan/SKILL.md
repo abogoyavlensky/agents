@@ -48,7 +48,7 @@ Do NOT invoke any implementation skill, write any code, scaffold any project, or
   `docs/plans/YYYY-MM-DD-<topic>.md`
 - Use `../brainstorming/plan-format-guide.md` as the reference for the
   document format, but keep the plan lightweight
-- Use writing-clearly-and-concisely skill if available
+- Use /writing-clearly skill
 - First, commit the plan document to git without attribution with one-line
   message
 

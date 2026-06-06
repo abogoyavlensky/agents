@@ -78,4 +78,5 @@ Each step is one action (2-5 minutes):
 - Describe what to implement clearly, but don't inline full code — the executor can write code from clear descriptions
 - Exact commands with expected output
 - Reference relevant skills with `/` syntax
+- Use /writing-clearly skill
 - DRY, YAGNI, TDD, frequent commits
