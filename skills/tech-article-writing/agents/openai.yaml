@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tech Article Writing"
+  short_description: "Edit technical posts in your practical voice"
+  default_prompt: "Use $tech-article-writing to edit this technical article in my usual blog style."
