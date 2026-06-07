@@ -56,6 +56,13 @@ ln -s /workspace/Projects/agents/skills ~/.agents/skills
 ln -s /workspace/Projects/agents/skills ~/.kiro/skills
 ```
 
+## Set your git identity inside the VM
+
+```shell
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+```
+
 ## Aliases
 
 ```bash
@@ -76,11 +83,11 @@ lmcx() {
   lm codex --yolo "$@"
 }
 
-lmcop() {
-  lm copilot --yolo "$@"
+lmoc() {
+  lm opencode "$@"
 }
 
-lmkiro() {
-  lm kiro-cli chat --trust-all-tools "$@"
+lmpi() {
+  lm pi "$@"
 }
 ```

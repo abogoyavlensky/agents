@@ -34,7 +34,7 @@ provision:
         curl https://mise.run | sh
       fi
 
-      # Login shell profile: PATH for mise shims, ~/.local/bin (kiro), linuxbrew;
+      # Login shell profile: PATH for mise shims, ~/.local/bin, linuxbrew;
       # source .bashrc so interactive features (mise activate) also load.
       cat > "$HOME/.bash_profile" <<'EOF'
       # Homebrew (linuxbrew)
@@ -42,7 +42,7 @@ provision:
         export PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH"
       fi
 
-      # User-local binaries (kiro-cli, mise itself, etc.)
+      # User-local binaries (mise itself, etc.)
       export PATH="$HOME/.local/bin:$PATH"
 
       # mise-managed tools (shims must be on PATH for non-interactive shells)
@@ -77,7 +77,7 @@ provision:
       export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
 
       # Skills directories for agents
-      mkdir -p "$HOME/.claude/skills" "$HOME/.agents/skills" "$HOME/.kiro/skills"
+      mkdir -p "$HOME/.claude/skills" "$HOME/.agents/skills"
 
       # Homebrew (linuxbrew), non-interactive.
       BREW_PREFIX="/home/linuxbrew/.linuxbrew"
@@ -88,20 +88,20 @@ provision:
       export PATH="$BREW_PREFIX/bin:$BREW_PREFIX/sbin:$PATH"
 
       # AI agent CLIs and other tools
-      brew install copilot-cli
       brew install codex
       brew install umputun/apps/revdiff
 
-      # Claude Code via the official Linux installer
+      # Claude Code via the official installer
       if ! command -v claude >/dev/null 2>&1; then
         curl -fsSL https://claude.ai/install.sh | bash
       fi
 
+      # Install Opencode CLI via official installer
       if ! command -v opencode >/dev/null 2>&1; then
         curl -fsSL https://opencode.ai/install | bash
       fi
 
-      # Kiro CLI (installs into ~/.local/bin)
-      if ! command -v kiro-cli >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/kiro-cli" ]; then
-        curl -fsSL https://cli.kiro.dev/install | bash
+      # Install pi.dev CLI via official installer
+      if ! command -v pi >/dev/null 2>&1; then
+        curl -fsSL https://pi.dev/install.sh | sh
       fi
