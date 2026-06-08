@@ -1,6 +1,6 @@
 ---
 name: tech-article-writing
-description: Edit or draft technical articles, blog posts, tutorials, README-style walkthroughs, and documentation in Andrey Bogoyavlensky's practical technical writing voice. Use when the user asks to improve grammar, fluency, structure, or style of technical prose; align a draft with "my style"; write or rewrite articles for bogoyavlensky.com; or preserve the author's existing voice while applying clear-writing rules.
+description: Review, edit, or draft technical articles, blog posts, tutorials, README-style walkthroughs, and documentation in Andrey Bogoyavlensky's practical technical writing voice. Use when asked to review or improve an article end to end (grammar, fluency, factual correctness, readability) and apply the fixes; improve grammar, fluency, structure, or style of technical prose; align a draft with "my style"; or write/rewrite articles for bogoyavlensky.com while preserving the author's voice.
 ---
 
 # Tech Article Writing
@@ -9,18 +9,35 @@ description: Edit or draft technical articles, blog posts, tutorials, README-sty
 
 Make technical writing clear, practical, and human without turning it into corporate or generic AI prose.
 
-Use this skill together with general clarity rules from `writing-clearly` when available. This skill controls voice and article shape; `writing-clearly` controls grammar, concision, active voice, and avoidance of puffy wording.
+When run against an article (a `.md` file, or "review/improve this post"), do a full end-to-end review: grammar, fluency, factual correctness, and overall readability, and apply the improvements. Default to actually improving the draft, not just listing suggestions.
 
-## Workflow
+Use this skill together with general clarity rules from `writing-clearly` when available. This skill controls voice, article shape, and the review workflow; `writing-clearly` controls grammar, concision, active voice, and avoidance of puffy wording.
 
-1. Read the target draft first.
-2. If working inside a repo with existing articles, sample 2-4 nearby articles before editing.
-3. Preserve the author's technical intent, examples, links, and command flow.
-4. Fix grammar, spelling, punctuation, and awkward phrasing.
-5. Keep the style practical: short paragraphs, direct transitions, first-person context, and command-driven walkthroughs.
-6. After editing, do a final pass for leftover typos, Markdown/code fence issues, trailing whitespace, and generic AI phrasing.
+## Review Workflow
 
-For substantial rewrites, read `references/style-guide.md` before editing. For small grammar fixes, the rules below are enough.
+Work in passes. Read the whole draft first. If you are in a repo with other articles, sample 2-4 nearby ones to lock onto the author's voice. Note the article's goal and audience before touching anything.
+
+**Pass 1 - Copyedit (apply directly).**
+- Fix grammar, spelling, punctuation, and awkward phrasing.
+- Improve fluency and flow: omit needless words, prefer active voice and positive form, keep related words together (lean on `writing-clearly`).
+- Fix internal consistency: names, paths, commands, and option flags should match across the whole article.
+- Strip generic AI phrasing (`seamless`, `robust`, `leverage`, `delve`, `groundbreaking`, empty "-ing" clauses).
+
+**Pass 2 - Factual correctness.**
+- Sanity-check technical claims, commands, flags, and any version- or behavior-specific statements.
+- If the article links to repos, docs, or other sources, open them (WebFetch) and verify that the claims, commands, and snippets actually match what the source says.
+- Fix clear errors. For anything you cannot verify, flag it for the author instead of silently rewriting it into something that might also be wrong.
+
+**Pass 3 - Editorial and readability review.**
+- Walk the article against `references/review-checklist.md`: motivation/stakes, orientation, concreteness, structure and ordering, redundancy, honesty, links, and landing.
+- Apply the clear wins directly. For bigger moves (new sections, removing content, reordering whole sections, anything that changes scope or intent), present a short prioritized list with line references and apply on the author's go-ahead.
+
+**Pass 4 - Final validation.**
+- Code fences balanced, headings/lists/links render, no trailing whitespace, no em dashes, ASCII punctuation throughout.
+- Compare the result against at least one existing article.
+- Report what you changed and, separately, what you flagged for the author to confirm.
+
+For substantial rewrites, read `references/style-guide.md` before editing. For a quick grammar-only pass, Pass 1 plus the rules below are enough.
 
 ## Voice Rules
 
@@ -43,12 +60,4 @@ For substantial rewrites, read `references/style-guide.md` before editing. For s
 - When changing commands, make them more executable and concrete, but do not alter the intended workflow.
 - Prefer ASCII punctuation. Do not use em dashes.
 
-## Final Check
-
-Before finishing:
-
-- Compare the result against at least one existing article when possible.
-- Check for spelling and grammar issues.
-- Check that headings, lists, links, and code fences still render correctly.
-- Check for generic AI wording such as `seamless`, `robust`, `leverage`, `delve`, `groundbreaking`, and similar filler.
-- Report what changed briefly and mention any validation performed.
+**Apply directly vs propose first.** Apply directly: grammar, fluency, consistency, generic-AI fixes, missing links, trimming filler, fixing ordering, de-duplicating, and obvious factual or command typos. Propose first: unverifiable claims, new sections, removing content, reordering whole sections, or anything that changes the article's scope or intent.

@@ -1,4 +1,4 @@
 interface:
   display_name: "Tech Article Writing"
-  short_description: "Edit technical posts in your practical voice"
-  default_prompt: "Use $tech-article-writing to edit this technical article in my usual blog style."
+  short_description: "Review and improve technical posts in your voice"
+  default_prompt: "Use $tech-article-writing to review and improve this technical article end to end: grammar, fluency, factual correctness, and readability, then apply the fixes."
