@@ -48,15 +48,13 @@ provision:
       # mise-managed tools (shims must be on PATH for non-interactive shells)
       export PATH="$HOME/.local/share/mise/shims:$PATH"
 
-      # git aliases
+      # aliases
       alias gs="git status"
       alias gpo='git push origin HEAD'
       alias gg='git log --graph --pretty=format:'\''%C(bold)%h%Creset%C(magenta)%d%Creset %s %C(yellow)<%an> %C(cyan)(%cr)%Creset'\'' --abbrev-commit --date=relative'
       alias gcam='git commit -v -am'
       alias gcmp='git checkout master && git pull origin master'
       alias gcb='git checkout -b $1'
-
-      # revdiff
       alias rd='revdiff "$@"'
 
       # Source .bashrc for interactive setup (mise activate, aliases, etc.)
@@ -89,19 +87,10 @@ provision:
 
       # AI agent CLIs and other tools
       brew install codex
+      brew install anomalyco/tap/opencode
       brew install umputun/apps/revdiff
 
       # Claude Code via the official installer
       if ! command -v claude >/dev/null 2>&1; then
         curl -fsSL https://claude.ai/install.sh | bash
-      fi
-
-      # Install Opencode CLI via official installer
-      if ! command -v opencode >/dev/null 2>&1; then
-        curl -fsSL https://opencode.ai/install | bash
-      fi
-
-      # Install pi.dev CLI via official installer
-      if ! command -v pi >/dev/null 2>&1; then
-        curl -fsSL https://pi.dev/install.sh | sh
       fi
