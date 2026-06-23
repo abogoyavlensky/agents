@@ -279,7 +279,7 @@ _Filled in on completion: flip Status above to `✅ Achieved <date>`; summarize 
 **Launcher** — one `/goal` line, copy-paste ready:
 
 ```
-/goal Implement docs/goals/<YYYY-MM-DD>-<topic>.md to its Target state. Done when: every Acceptance criterion in that file is demonstrated in this conversation, `<check 1>` and `<check 2>` are shown passing here, the review-with-codex skill has run with must-fix items resolved, and the file's Status + Result are updated. If genuinely blocked, ask me — that counts as done. Or stop after <N> turns.
+/goal Implement docs/goals/<YYYY-MM-DD>-<topic>.md to its Target state. Done when: you have restated each Acceptance criterion from that file in this conversation with the evidence that satisfies it, `<check 1>` and `<check 2>` are shown passing here, the review-with-codex skill has run with must-fix items resolved, and the file's Status + Result are updated. If genuinely blocked, ask me — that counts as done. Or stop after <N> turns.
 ```
 
 ## Key principles
