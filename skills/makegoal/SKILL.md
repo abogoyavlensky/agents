@@ -28,26 +28,37 @@ fastplan or brainstorming instead.
 
 `/goal <condition>` (Claude Code v2.1.139+) sets a *completion condition* for the session and
 starts working immediately — the condition is the directive, no separate prompt needed. After
-each turn a small fast model checks the condition against **the conversation so far** — it does
-not run commands or read files — and if it isn't met, another turn auto-starts. The goal clears
-when the condition holds. It needs a trusted workspace with hooks enabled.
+each turn the condition and the conversation so far go to a small fast model (Haiku by default),
+which returns yes/no plus a short reason; on "no," another turn auto-starts. The goal clears when
+the condition holds. It needs a trusted workspace with hooks enabled.
 
-That "evaluator only sees the transcript" fact shapes the launcher:
+The evaluator is a **single fast-model call with no tools** — it can't open files, run commands,
+or inspect the repo (that's the prompt-based Stop hook `/goal` wraps; only *agent*-type hooks get
+tools, which `/goal` doesn't use). It judges **the conversation**. Your `docs/goals/…` file
+reaches it only because the main model surfaces that content in the transcript (it does, by
+reading the file at turn 1) — but it's a fast model judging a growing conversation, so don't bank
+on it weighing a file dump from many turns ago. The launcher must carry the decisive signals
+itself, and the run should *re-surface* them at the end:
 
-- **State the check, not just the file.** The evaluator can't open the doc, so the condition
-  must be demonstrable from what Claude surfaces: name the exact commands whose passing output
-  will land in the conversation, and require each acceptance criterion to be confirmed there.
-  The *main* model reads the doc at turn 1 for the full brief; the *evaluator* judges only the
-  result.
+- **State the check, not just the file.** Name the exact commands whose passing output will land
+  in the conversation, and require each acceptance criterion to be confirmed there — don't make
+  the evaluator rely on a file it can't open. The *main* model reads the doc for the full brief;
+  the *evaluator* judges only the result.
+- **Re-surface a done-check at the end.** Have the agent restate each acceptance criterion with
+  the evidence that satisfies it just before claiming done, so the evaluator sees a clean, recent
+  checklist regardless of how the conversation has been compacted.
 - **Bound the loop.** Include a stop clause ("or stop after N turns") so it can't spin.
 - **Make "blocked" terminal.** Phrase a genuine blocker — a question raised to the user — as a
   satisfying end state, so the loop hands control back instead of looping past it.
+- **One goal, one end state.** A single verifiable end state holds up across turns; a compound
+  one ("redesign auth, add OAuth, write tests, update docs") overwhelms the evaluator. If the
+  idea is compound, split it into sequential goals, each its own contract + launcher.
 
-So makegoal splits the work: a tight, evaluator-facing **condition** (the launcher) and the
-full **brief** the main model reads (the `docs/goals/…` file). The contract's sections are just
-a structured way to write what the official docs call an effective condition — one measurable
-end state (Target state + Acceptance criteria), a stated check (Verification), and constraints
-that matter (Non-goals + Fixed decisions).
+So makegoal splits the work: a tight, evaluator-facing **condition** (the launcher, well under
+its 4,000-character limit) and the full **brief** the main model reads (the `docs/goals/…`
+file). The contract's sections are exactly what the official docs call an effective condition —
+one measurable end state (Target + Acceptance criteria), a stated check (Verification), and
+constraints that matter (Non-goals + Fixed decisions).
 
 ## The process
 
@@ -115,8 +126,12 @@ available.
   isn't now. Outcomes, not steps. 2–4 sentences. If you're writing "first do X, then Y," stop —
   that's a plan, and it belongs to the executing agent.
 - **Fixed decisions** — settled, load-bearing calls the agent must honor and not relitigate
-  (chosen API shape, config keys, severity levels, behavior). One line of rationale each, so
-  the agent can apply the *why* to cases you didn't foresee.
+  (chosen API shape, config keys, severity levels, behavior). One line of rationale each, so the
+  agent can apply the *why* to cases you didn't foresee. Pitch these at the level of *what must
+  hold or be reused*, not which line to edit — name internal files/symbols only when the decision
+  truly hinges on them. Over-pinning the route is the plan you're trying not to write. (This is
+  about the implementation route; naming the test harness/commands under Verification is fine and
+  encouraged — that's how "done" gets proven.)
 - **Assumptions** — reasonable defaults taken without certainty. The agent may proceed on them
   but must **flag any that turn out false**. Keep these visibly separate from Fixed Decisions:
   "this is settled" vs. "best guess, correct me" is the difference between confident autonomy
@@ -240,6 +255,8 @@ Run these, show the passing output, and end with a final diff summary before cla
 - `<command>` — <what it proves>
 - <example/e2e check proving the user-visible behavior>
 
+Before claiming done, restate each acceptance criterion in the conversation with the evidence that satisfies it — the `/goal` evaluator judges only the transcript, not this file.
+
 ## Review policy
 - After verification passes, run the **review-with-codex** skill on the diff.
 - Fix real correctness / API / edge-case / coverage findings; keep the implementation minimal.
@@ -271,8 +288,11 @@ _Filled in on completion: flip Status above to `✅ Achieved <date>`; summarize 
   the executing agent. The moment you're writing ordered steps, you've left makegoal for a plan.
 - **Minimal launcher, full brief in the file.** The `/goal` condition stays tight and
   evaluator-facing; the contract carries the detail the main model reads at turn 1.
-- **Write for the evaluator's blind spot.** It judges only the transcript — name the checks
-  whose passing output will appear, bound the loop, and make "blocked → asked" a terminal state.
+- **Write for the evaluator's blind spot.** It judges only the transcript (and weighs recent,
+  explicit output over a long-ago file dump) — name the checks whose passing output will appear,
+  re-surface a done-check at the end, bound the loop, and make "blocked → asked" a terminal state.
+- **One goal, one end state.** Split compound ideas into sequential goals; a single verifiable
+  end state is what holds up across turns.
 - **Momentum over interrogation.** Decide reversible forks yourself; spend a question only on
   public-API / compatibility / semantics / scope / verification forks — and batch them.
 - **Fixed vs assumed, always separated.** "Settled, don't relitigate" and "best guess, correct
