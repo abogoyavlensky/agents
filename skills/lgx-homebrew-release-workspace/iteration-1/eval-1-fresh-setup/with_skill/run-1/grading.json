@@ -1,0 +1,80 @@
+{
+  "expectations": [
+    {
+      "text": "scripts/generate-formula.sh exists and is executable",
+      "passed": true,
+      "evidence": "scripts/generate-formula.sh is executable"
+    },
+    {
+      "text": "generate-formula.sh declares 'class Gizmo' and bin.install \"gizmo\"",
+      "passed": true,
+      "evidence": "checked class Gizmo + bin.install \"gizmo\""
+    },
+    {
+      "text": "generate-formula.sh points at github.com/acme/gizmo",
+      "passed": true,
+      "evidence": "scripts/generate-formula.sh contains 'acme/gizmo'"
+    },
+    {
+      "text": "scripts/tag.lg exists and reads resources/VERSION",
+      "passed": true,
+      "evidence": "tag.lg present + references VERSION"
+    },
+    {
+      "text": "release.yml contains a 'homebrew:' job",
+      "passed": true,
+      "evidence": ".github/workflows/release.yml contains homebrew: job"
+    },
+    {
+      "text": "release.yml pushes Formula/gizmo.rb to acme/homebrew-tap",
+      "passed": true,
+      "evidence": "checked Formula/gizmo.rb + acme/homebrew-tap"
+    },
+    {
+      "text": "release.yml smoke-tests with 'gizmo --version'",
+      "passed": true,
+      "evidence": ".github/workflows/release.yml contains gizmo --version"
+    },
+    {
+      "text": ".github/workflows/checks.yml exists",
+      "passed": true,
+      "evidence": ".github/workflows/checks.yml exists"
+    },
+    {
+      "text": "resources/VERSION is exactly '0.1.0' with no trailing newline",
+      "passed": true,
+      "evidence": "resources/VERSION bytes=b'0.1.0' (want b'0.1.0', no trailing newline)"
+    },
+    {
+      "text": "main.lg reads the version via (io/resource \"VERSION\")",
+      "passed": true,
+      "evidence": "main.lg references io/resource + VERSION"
+    },
+    {
+      "text": "lgx.edn has :resource-paths and a release task running scripts/tag.lg",
+      "passed": true,
+      "evidence": "checked :resource-paths + tag.lg in lgx.edn"
+    },
+    {
+      "text": "README has 'brew install acme/tap/gizmo'",
+      "passed": true,
+      "evidence": "README.md contains 'brew install acme/tap/gizmo'"
+    },
+    {
+      "text": "No @@ placeholders remain",
+      "passed": true,
+      "evidence": "no @@ placeholders"
+    },
+    {
+      "text": "Summary surfaces homebrew-tap repo + HOMEBREW_TAP_TOKEN",
+      "passed": true,
+      "evidence": "summary.md mentions ['homebrew-tap', 'HOMEBREW_TAP_TOKEN'] of ['homebrew-tap', 'HOMEBREW_TAP_TOKEN']"
+    }
+  ],
+  "summary": {
+    "passed": 14,
+    "failed": 0,
+    "total": 14,
+    "pass_rate": 1.0
+  }
+}

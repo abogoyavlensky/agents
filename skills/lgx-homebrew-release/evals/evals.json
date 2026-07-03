@@ -1,0 +1,44 @@
+{
+  "skill_name": "lgx-homebrew-release",
+  "evals": [
+    {
+      "id": 1,
+      "name": "fresh-setup",
+      "prompt": "This is my let-go CLI project 'gizmo' (built with lgx). I want people to be able to install it with Homebrew, and I want releases to happen automatically when I tag a version. The GitHub repo is github.com/acme/gizmo. Please set that up.",
+      "expected_output": "Scaffolds scripts/generate-formula.sh (executable, class Gizmo, homepage/urls acme/gizmo, bin.install gizmo), scripts/tag.lg, .github/workflows/checks.yml, .github/workflows/release.yml (with a homebrew job pushing Formula/gizmo.rb to acme/homebrew-tap, smoke test 'gizmo --version'), resources/VERSION (0.1.0, no trailing newline). Edits main.lg to read the version from the resource and lgx.edn to add :resource-paths and a release task. Adds a README Installation section with 'brew install acme/tap/gizmo'. No @@ placeholders remain. Surfaces the manual steps (homebrew-tap repo, HOMEBREW_TAP_TOKEN secret).",
+      "files": ["evals/files/gizmo"],
+      "expectations": [
+        "scripts/generate-formula.sh exists and is executable",
+        "generate-formula.sh declares 'class Gizmo < Formula' and uses bin.install \"gizmo\"",
+        "generate-formula.sh homepage and download URLs point at github.com/acme/gizmo",
+        "scripts/tag.lg exists and reads resources/VERSION",
+        ".github/workflows/release.yml exists and contains a 'homebrew:' job",
+        "release.yml pushes Formula/gizmo.rb to the acme/homebrew-tap repo",
+        "release.yml smoke-tests the binary with 'gizmo --version' (not a nonexistent subcommand)",
+        ".github/workflows/checks.yml exists",
+        "resources/VERSION contains exactly '0.1.0' with no trailing newline",
+        "main.lg reads the version via (io/resource \"VERSION\") instead of a hardcoded string",
+        "lgx.edn contains :resource-paths [\"resources\"] and a release task that runs scripts/tag.lg",
+        "README has an Installation section containing 'brew install acme/tap/gizmo'",
+        "No '@@' placeholder markers remain in any scaffolded file",
+        "The response tells the user to create the homebrew-tap repo and add a HOMEBREW_TAP_TOKEN secret"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "existing-ci",
+      "prompt": "Add automated Homebrew releases to my lgx project 'gizmo' (repo: acme/gizmo). Heads up: I already have a GitHub Actions checks workflow I'm happy with, so don't overwrite it.",
+      "expected_output": "Adds the release pipeline (scripts/generate-formula.sh, scripts/tag.lg, release.yml with the homebrew job for Formula/gizmo.rb, resources/VERSION) and wires main.lg/lgx.edn, but leaves the existing .github/workflows/checks.yml untouched (its distinctive marker comment survives). release.yml's checks job still references ./.github/workflows/checks.yml.",
+      "files": ["evals/files/gizmo", "PLUS a pre-existing .github/workflows/checks.yml carrying the marker comment '# gizmo project CI - keep me'"],
+      "expectations": [
+        "The pre-existing .github/workflows/checks.yml is preserved (its '# gizmo project CI - keep me' marker still present)",
+        "scripts/generate-formula.sh exists (executable) with 'class Gizmo' and bin.install \"gizmo\"",
+        "scripts/tag.lg exists",
+        ".github/workflows/release.yml exists with a 'homebrew:' job pushing Formula/gizmo.rb",
+        "release.yml's checks job references ./.github/workflows/checks.yml",
+        "resources/VERSION contains exactly '0.1.0' with no trailing newline",
+        "No '@@' placeholder markers remain in any scaffolded file"
+      ]
+    }
+  ]
+}

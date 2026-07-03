@@ -1,0 +1,6 @@
+(ns gizmo.core-test
+  (:require [clojure.test :refer [deftest is]]
+            [gizmo.core :as cmds]))
+
+(deftest test-run
+  (is (= "gizmo ran" (cmds/run {}))))

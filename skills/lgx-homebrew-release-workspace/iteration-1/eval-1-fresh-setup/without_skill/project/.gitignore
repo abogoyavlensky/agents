@@ -1,0 +1,7 @@
+/bin/
+/dist/
+/build/
+/bases/
+lg-checksums.txt
+.nrepl-port
+.tmp/

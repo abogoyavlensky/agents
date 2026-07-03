@@ -1,0 +1,7 @@
+(ns gizmo.core)
+
+(defn run
+  [_ctx]
+  (let [msg "gizmo ran"]
+    (println msg)
+    msg))

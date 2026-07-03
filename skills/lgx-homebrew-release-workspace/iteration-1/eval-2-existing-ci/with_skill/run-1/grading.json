@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "Pre-existing checks.yml preserved ('# gizmo project CI - keep me')",
+      "passed": true,
+      "evidence": ".github/workflows/checks.yml contains 'gizmo project CI - keep me'"
+    },
+    {
+      "text": "generate-formula.sh exists (executable) with class Gizmo + bin.install gizmo",
+      "passed": true,
+      "evidence": "exec + class Gizmo + bin.install \"gizmo\""
+    },
+    {
+      "text": "scripts/tag.lg exists",
+      "passed": true,
+      "evidence": "scripts/tag.lg exists"
+    },
+    {
+      "text": "release.yml has a 'homebrew:' job pushing Formula/gizmo.rb",
+      "passed": true,
+      "evidence": "checked homebrew: job + Formula/gizmo.rb"
+    },
+    {
+      "text": "release.yml checks job references ./.github/workflows/checks.yml",
+      "passed": true,
+      "evidence": ".github/workflows/release.yml contains './.github/workflows/checks.yml'"
+    },
+    {
+      "text": "resources/VERSION is exactly '0.1.0' with no trailing newline",
+      "passed": true,
+      "evidence": "resources/VERSION bytes=b'0.1.0' (want b'0.1.0', no trailing newline)"
+    },
+    {
+      "text": "No @@ placeholders remain",
+      "passed": true,
+      "evidence": "no @@ placeholders"
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 0,
+    "total": 7,
+    "pass_rate": 1.0
+  }
+}
