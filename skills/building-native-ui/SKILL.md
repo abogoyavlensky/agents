@@ -1,11 +1,13 @@
 ---
 name: building-native-ui
-description: Complete guide for building beautiful apps with Expo Router. Covers fundamentals, styling, components, navigation, animations, patterns, and native tabs.
-version: 1.0.1
+description: Build beautiful, native-feeling Expo screens. Covers Apple HIG styling, semantic colors, native controls, SF Symbols, media, animations, visual effects, gradients, storage, and responsive layout. For routing and navigation, use the expo-router skill.
+version: 1.1.0
 license: MIT
 ---
 
 # Expo UI Guidelines
+
+For routes, links, stacks, tabs, modals, sheets, and headers, use the `expo-router` skill.
 
 ## References
 
@@ -15,18 +17,12 @@ Consult these resources as needed:
 references/
   animations.md          Reanimated: entering, exiting, layout, scroll-driven, gestures
   controls.md            Native iOS: Switch, Slider, SegmentedControl, DateTimePicker, Picker
-  form-sheet.md          Form sheets in expo-router: configuration, footers and background interaction. 
   gradients.md           CSS gradients via experimental_backgroundImage (New Arch only)
   icons.md               SF Symbols via expo-image (sf: source), names, animations, weights
   media.md               Camera, audio, video, and file saving
-  route-structure.md     Route conventions, dynamic routes, groups, folder organization
-  search.md              Search bar with headers, useSearch hook, filtering patterns
   storage.md             SQLite, AsyncStorage, SecureStore
-  tabs.md                NativeTabs, migration from JS tabs, iOS 26 features
-  toolbar-and-headers.md Stack headers and toolbar buttons, menus, search (iOS only)
   visual-effects.md      Blur (expo-blur) and liquid glass (expo-glass-effect)
   webgpu-three.md        3D graphics, games, GPU visualizations with WebGPU and Three.js
-  zoom-transitions.md    Apple Zoom: fluid zoom transitions with Link.AppleZoom (iOS 18+)
 ```
 
 ## Running the App
@@ -64,17 +60,8 @@ Expo Go supports a huge range of features out of the box:
 - Be cautious of unterminated strings. Ensure nested backticks are escaped; never forget to escape quotes correctly.
 - Always use import statements at the top of the file.
 - Always use kebab-case for file names, e.g. `comment-card.tsx`
-- Always remove old route files when moving or restructuring navigation
 - Never use special characters in file names
 - Configure tsconfig.json with path aliases, and prefer aliases over relative imports for refactors.
-
-## Routes
-
-See `./references/route-structure.md` for detailed route conventions.
-
-- Routes belong in the `app` directory.
-- Never co-locate components, types, or utilities in the app directory. This is an anti-pattern.
-- Ensure the app always has a route that matches "/", it may be inside a group route.
 
 ## Library Preferences
 
@@ -88,6 +75,8 @@ See `./references/route-structure.md` for detailed route conventions.
 - `React.use` not `React.useContext`
 - `expo-image` Image component instead of intrinsic element `img`
 - `expo-glass-effect` for liquid glass backdrops
+- `Color` from `expo-router` for native semantic colors, not raw `PlatformColor` (type-safe, auto-adapts to light/dark)
+- In SDK 56+, never import from `@react-navigation/*` directly — use `expo-router/react-navigation` instead (covers `@react-navigation/native`, `/core`, `/elements`, `/routers`)
 
 ## Responsiveness
 
@@ -103,7 +92,6 @@ See `./references/route-structure.md` for detailed route conventions.
 - Use views with built-in haptics like `<Switch />` from React Native and `@react-native-community/datetimepicker`
 - When a route belongs to a Stack, its first child should almost always be a ScrollView with `contentInsetAdjustmentBehavior="automatic"` set
 - When adding a `ScrollView` to the page it should almost always be the first component inside the route component
-- Prefer `headerSearchBarOptions` in Stack.Screen options to add a search bar
 - Use the `<Text selectable />` prop on text containing data that could be copied
 - Consider formatting large numbers like 1.4M or 38k
 - Never use intrinsic elements like 'img' or 'div' unless in a webview or Expo DOM component
@@ -125,6 +113,58 @@ Follow Apple Human Interface Guidelines.
 - When padding a ScrollView, use `contentContainerStyle` padding and gap instead of padding on the ScrollView itself (reduces clipping)
 - CSS and Tailwind are not supported - use inline styles
 
+## Colors
+
+Use the `Color` API from `expo-router` for native semantic colors. It is a type-safe wrapper over `PlatformColor` that exposes iOS UIKit colors through `Color.ios.*` and Android Material 3 colors through `Color.android.material.*` (static) or `Color.android.dynamic.*` (adapts to the user's wallpaper on Android 12+). These resolve on-device and automatically adapt to light/dark mode and accessibility settings, so you no longer maintain separate light/dark hex tables or a `colors.web.ts` file.
+
+`Color` is platform-specific, so wrap each value in `Platform.select` with a `default` hex fallback for web. Centralize the palette in `theme/colors.ts` and import `colors` everywhere:
+
+```tsx
+// theme/colors.ts
+import { Platform } from "react-native";
+import { Color } from "expo-router";
+
+export const colors = {
+  label: Platform.select({
+    ios: Color.ios.label,
+    android: Color.android.dynamic.onSurface,
+    default: "#000000",
+  })!,
+  secondaryLabel: Platform.select({
+    ios: Color.ios.secondaryLabel,
+    android: Color.android.dynamic.onSurfaceVariant,
+    default: "#3c3c43",
+  })!,
+  separator: Platform.select({
+    ios: Color.ios.separator,
+    android: Color.android.dynamic.outlineVariant,
+    default: "#c6c6c8",
+  })!,
+  systemBackground: Platform.select({
+    ios: Color.ios.systemBackground,
+    android: Color.android.dynamic.surface,
+    default: "#ffffff",
+  })!,
+  systemBlue: Platform.select({
+    ios: Color.ios.systemBlue,
+    android: Color.android.dynamic.primary,
+    default: "#007aff",
+  })!,
+};
+```
+
+```tsx
+import { colors } from "@/theme/colors";
+
+<View style={{ backgroundColor: colors.systemBackground }}>
+  <Text style={{ color: colors.label }}>Title</Text>
+</View>;
+```
+
+- iOS re-resolves these colors automatically when the system theme changes. On Android, call `useColorScheme()` inside any component that renders them so it re-renders when the theme flips (required when React Compiler memoizes the component).
+- Don't pass `Color` / `PlatformColor` values into Reanimated styles — use static colors there (see `references/animations.md`).
+- `Platform.select({...})!` returns `string | OpaqueColorValue`. Most React Native style props accept `ColorValue` (`string | OpaqueColorValue`) so this works fine. But some third-party props only accept `string` (e.g. `tintColor` on `expo-image`). Cast when needed: `colors.label as string`.
+
 ## Text Styling
 
 - Add the `selectable` prop to every `<Text/>` element displaying important data or error messages
@@ -139,183 +179,3 @@ Use CSS `boxShadow` style prop. NEVER use legacy React Native shadow or elevatio
 ```
 
 'inset' shadows are supported.
-
-# Navigation
-
-## Link
-
-Use `<Link href="/path" />` from 'expo-router' for navigation between routes.
-
-```tsx
-import { Link } from 'expo-router';
-
-// Basic link
-<Link href="/path" />
-
-// Wrapping custom components
-<Link href="/path" asChild>
-  <Pressable>...</Pressable>
-</Link>
-```
-
-Whenever possible, include a `<Link.Preview>` to follow iOS conventions. Add context menus and previews frequently to enhance navigation.
-
-## Stack
-
-- ALWAYS use `_layout.tsx` files to define stacks
-- Use Stack from 'expo-router/stack' for native navigation stacks
-
-### Page Title
-
-Set the page title in Stack.Screen options:
-
-```tsx
-<Stack.Screen options={{ title: "Home" }} />
-```
-
-## Context Menus
-
-Add long press context menus to Link components:
-
-```tsx
-import { Link } from "expo-router";
-
-<Link href="/settings" asChild>
-  <Link.Trigger>
-    <Pressable>
-      <Card />
-    </Pressable>
-  </Link.Trigger>
-  <Link.Menu>
-    <Link.MenuAction
-      title="Share"
-      icon="square.and.arrow.up"
-      onPress={handleSharePress}
-    />
-    <Link.MenuAction
-      title="Block"
-      icon="nosign"
-      destructive
-      onPress={handleBlockPress}
-    />
-    <Link.Menu title="More" icon="ellipsis">
-      <Link.MenuAction title="Copy" icon="doc.on.doc" onPress={() => {}} />
-      <Link.MenuAction
-        title="Delete"
-        icon="trash"
-        destructive
-        onPress={() => {}}
-      />
-    </Link.Menu>
-  </Link.Menu>
-</Link>;
-```
-
-## Link Previews
-
-Use link previews frequently to enhance navigation:
-
-```tsx
-<Link href="/settings">
-  <Link.Trigger>
-    <Pressable>
-      <Card />
-    </Pressable>
-  </Link.Trigger>
-  <Link.Preview />
-</Link>
-```
-
-Link preview can be used with context menus.
-
-## Modal
-
-Present a screen as a modal:
-
-```tsx
-<Stack.Screen name="modal" options={{ presentation: "modal" }} />
-```
-
-Prefer this to building a custom modal component.
-
-## Sheet
-
-Present a screen as a dynamic form sheet:
-
-```tsx
-<Stack.Screen
-  name="sheet"
-  options={{
-    presentation: "formSheet",
-    sheetGrabberVisible: true,
-    sheetAllowedDetents: [0.5, 1.0],
-    contentStyle: { backgroundColor: "transparent" },
-  }}
-/>
-```
-
-- Using `contentStyle: { backgroundColor: "transparent" }` makes the background liquid glass on iOS 26+.
-
-## Common route structure
-
-A standard app layout with tabs and stacks inside each tab:
-
-```
-app/
-  _layout.tsx — <NativeTabs />
-  (index,search)/
-    _layout.tsx — <Stack />
-    index.tsx — Main list
-    search.tsx — Search view
-```
-
-```tsx
-// app/_layout.tsx
-import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
-import { Theme } from "../components/theme";
-
-export default function Layout() {
-  return (
-    <Theme>
-      <NativeTabs>
-        <NativeTabs.Trigger name="(index)">
-          <Icon sf="list.dash" />
-          <Label>Items</Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="(search)" role="search" />
-      </NativeTabs>
-    </Theme>
-  );
-}
-```
-
-Create a shared group route so both tabs can push common screens:
-
-```tsx
-// app/(index,search)/_layout.tsx
-import { Stack } from "expo-router/stack";
-import { PlatformColor } from "react-native";
-
-export default function Layout({ segment }) {
-  const screen = segment.match(/\((.*)\)/)?.[1]!;
-  const titles: Record<string, string> = { index: "Items", search: "Search" };
-
-  return (
-    <Stack
-      screenOptions={{
-        headerTransparent: true,
-        headerShadowVisible: false,
-        headerLargeTitleShadowVisible: false,
-        headerLargeStyle: { backgroundColor: "transparent" },
-        headerTitleStyle: { color: PlatformColor("label") },
-        headerLargeTitle: true,
-        headerBlurEffect: "none",
-        headerBackButtonDisplayMode: "minimal",
-      }}
-    >
-      <Stack.Screen name={screen} options={{ title: titles[screen] }} />
-      <Stack.Screen name="i/[id]" options={{ headerLargeTitle: false }} />
-    </Stack>
-  );
-}
-```
