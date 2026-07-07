@@ -63,7 +63,7 @@ After the design is agreed, write the full implementation plan to `docs/plans/YY
 
 - Follow `plan-format-guide.md` (in this skill dir) for structure: the standard header, then `## Design`, `## File Structure`, and bite-sized `### Task N:` sections with checkbox (`- [ ]`) steps that executing-plans can mark off.
 - The plan must be self-contained — fold the approved design into it so the executor has full context without the chat history.
-- Map the file structure first, then break the work into small tasks (test, implement, verify, commit). Exact paths, exact commands, expected outputs. Describe what to build clearly; don't inline full code.
+- Map the file structure first, then break the work into small tasks (test, implement, verify, commit). Exact paths, exact commands, expected outputs. Describe what to build clearly; inline small code fragments only where tasks must agree exactly (shared signatures, data shapes) or a description would be ambiguous (tricky logic) — never full implementations.
 - Use /writing-clearly if available. DRY, YAGNI, frequent commits.
 
 There is no interactive plan-review *loop* — the design was already agreed. Instead, a single background codex pass (next) gives the plan one independent read, and executing-plans reviews it again critically before it runs. One advisory pass, not a back-and-forth — that's what keeps it fast.

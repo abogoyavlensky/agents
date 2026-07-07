@@ -75,7 +75,7 @@ Each step is one action (2-5 minutes):
 ## Conventions
 
 - Exact file paths always
-- Describe what to implement clearly, but don't inline full code — the executor can write code from clear descriptions
+- Default to clear descriptions over code — the executor writes better code after reading the real files. Inline a small fragment only when: (a) two tasks must agree on it exactly (shared function signatures, data shapes/schemas), or (b) a one-line description could be implemented two materially different ways (tricky algorithms, regexes, formulas, subtle edge cases). Never full implementations, never boilerplate.
 - Exact commands with expected output
 - Reference relevant skills with `/` syntax
 - Use /writing-clearly skill
