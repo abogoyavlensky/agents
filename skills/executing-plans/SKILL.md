@@ -7,11 +7,11 @@ description: Use when you have a written implementation plan to execute in a sep
 
 ## Overview
 
-Load plan, review critically, execute all tasks with pipelined review, verify end-to-end, report when complete.
+Load plan, review critically, execute all tasks with review checkpoints, verify end-to-end, report when complete.
 
 **Announce at start:** "I'm using the executing-plans skill to implement this plan."
 
-**Source of truth:** the plan document. Checkboxes, deviation notes, and the completion summary all live there — it survives across sessions. TaskCreate/TaskUpdate is only a session-level view for the user; if the two ever disagree, the plan document wins.
+**Two tracking surfaces, both required:** the plan document is the durable record — checkboxes, deviation notes, and the completion summary live there, and it survives across sessions. The session task list (TaskCreate/TaskUpdate) is how your partner watches progress live in the session — create it at the start and keep statuses current throughout; never skip it. If the two ever disagree, the plan document wins.
 
 ## The Process
 
@@ -25,13 +25,12 @@ Load plan, review critically, execute all tasks with pipelined review, verify en
 ### Step 2: Execute Tasks
 
 For each task:
-1. Mark as in_progress
+1. Mark the task as `in_progress` with TaskUpdate
 2. Follow each step exactly (plan has bite-sized steps)
 3. Run verifications as specified, commit as the task directs
-4. Mark the task's steps as completed in the plan document
-5. Kick off the `review-with-codex` skill **in the background** against the just-committed work, then **immediately start the next task** — don't idle-wait. The per-task commit makes this safe: the reviewed code is already frozen in its commit.
-6. When a background review returns (usually mid-next-task), pause at the next natural point: address **must fix** findings as a fixup commit before the next task's commit. If the fix is non-trivial, re-run `review-with-codex` on it. Advisory findings: note and move on.
-7. **Final task only:** block on its review — there's no next task to overlap with, and nothing should be declared done with an unread review pending.
+4. Kick off the `review-with-codex` skill — it runs codex CLI against the just-committed work for a second-opinion review. Wait for it to finish before moving on (blocking checkpoint).
+5. Address any **must fix** findings codex returns as a fixup commit. If the changes are non-trivial, re-run `review-with-codex` to confirm. Advisory findings: note and move on.
+6. Mark the task as `completed` with TaskUpdate and check off its steps in the plan document
 
 ### Deviations: What You May Decide vs. When to Stop
 
@@ -65,10 +64,9 @@ Deviation notes surface in the completion summary, so your partner can veto afte
 
 Per-task tests passing is not the same as the feature working. Before declaring the plan done:
 
-1. Wait for the final task's codex review and resolve its must-fix findings
-2. Run the **full test suite**, not just the tests the plan touched
-3. **Exercise the built feature once end-to-end** — actually drive it the way a user would (use the `verify` skill if available). Task-level green plus integration-level broken is the classic failure mode this step exists to catch
-4. Then, in the plan document:
+1. Run the **full test suite**, not just the tests the plan touched
+2. **Exercise the built feature once end-to-end** — actually drive it the way a user would (use the `verify` skill if available). Task-level green plus integration-level broken is the classic failure mode this step exists to catch
+3. Then, in the plan document:
    - Mark the whole plan as completed
    - Write a short, concise summary at the end: what was implemented, any issues encountered, and all deviation notes gathered in one place
    - Add one line: **what the plan could have specified better** (or "nothing" if it held up) — this feeds back into how future plans get written
@@ -76,8 +74,8 @@ Per-task tests passing is not the same as the feature working. Before declaring 
 ## Remember
 - Review plan critically first — including whether it's stale
 - Follow plan steps exactly; small intent-preserving deviations are yours, design-shape changes are not
-- Reviews run in the background, pipelined with the next task — never idle-wait except on the final task
+- Every task ends with a blocking codex review — address must-fix findings before starting the next task
 - Don't skip verifications; finish with the full suite and an end-to-end pass
 - Reference skills when plan says to
 - Stop when blocked, don't guess
-- The plan document is the source of truth for progress, deviations, and the completion summary
+- Keep both tracking surfaces current: TaskUpdate for the live session view, the plan document as the durable record
