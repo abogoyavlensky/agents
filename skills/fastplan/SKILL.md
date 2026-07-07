@@ -7,7 +7,7 @@ description: Fast planning skill for small-to-medium coding work — features, c
 
 Turn an idea into an implementation-ready plan with minimal back-and-forth. The deal: you do the thinking, make the low-stakes design calls yourself, and bring the user in only for the decisions that genuinely need them. The goal is to be *faster*, not *dumber* — use the freedom to apply good judgment, not to skip it.
 
-This is the express lane to the same destination as brainstorming: the same plan format, the same `docs/plans/` location, the same handoff to executing-plans. What's cut is the ceremony — questions one at a time, section-by-section approval gates, and the plan review loop. What's kept is rigor in the design and the plan.
+This is the express lane to the same destination as brainstorming: the same plan format, the same `docs/plans/` location, the same handoff to executing-plans. What's cut is the ceremony — questions one at a time, section-by-section approval gates, and the interactive plan-review loop (replaced by a single background codex pass). What's kept is rigor in the design and the plan.
 
 <HARD-GATE>
 Do NOT write code, scaffold, or invoke any implementation skill until the user has approved the design AND the plan document is written. Speed comes from deciding well and presenting once — never from skipping the design or starting to build before it's agreed.
@@ -23,9 +23,11 @@ Do NOT write code, scaffold, or invoke any implementation skill until the user h
 
 4. **Approval gate** — ask whether the design looks right or any key decision needs adjusting. Iterate quickly if so. This is the main place the user steers.
 
-5. **Write the plan** — once the design is agreed, write the full detailed plan to `docs/plans/YYYY-MM-DD-<topic>.md` following `../brainstorming/plan-format-guide.md`.
+5. **Write the plan** — once the design is agreed, write the full detailed plan to `docs/plans/YYYY-MM-DD-<topic>.md` following `plan-format-guide.md` (in this skill dir).
 
-6. **Hand off** — offer a final light edit pass, then commit the plan and transition to executing-plans.
+6. **Review the plan with codex (background)** — the moment the plan file exists, kick off a read-only Codex review of it in the background using the plan-document-reviewer template. It runs async while you do the hand-off, so it costs no critical-path time. Advisory, not a new gate. (details below)
+
+7. **Hand off** — surface any codex findings, offer a final light edit pass, then commit the plan and transition to executing-plans.
 
 ## Decide What's Yours vs. What's Theirs
 
@@ -59,18 +61,48 @@ If the user wants changes, fold them in and re-present only what changed — no 
 
 After the design is agreed, write the full implementation plan to `docs/plans/YYYY-MM-DD-<topic>.md`.
 
-- Follow `../brainstorming/plan-format-guide.md` for structure: the standard header, then `## Design`, `## File Structure`, and bite-sized `### Task N:` sections with checkbox (`- [ ]`) steps that executing-plans can mark off.
+- Follow `plan-format-guide.md` (in this skill dir) for structure: the standard header, then `## Design`, `## File Structure`, and bite-sized `### Task N:` sections with checkbox (`- [ ]`) steps that executing-plans can mark off.
 - The plan must be self-contained — fold the approved design into it so the executor has full context without the chat history.
 - Map the file structure first, then break the work into small tasks (test, implement, verify, commit). Exact paths, exact commands, expected outputs. Describe what to build clearly; don't inline full code.
 - Use /writing-clearly if available. DRY, YAGNI, frequent commits.
 
-There is no plan review loop — the design was already agreed, and executing-plans reviews the plan critically before it runs. Skipping the loop is a deliberate part of being fast.
+There is no interactive plan-review *loop* — the design was already agreed. Instead, a single background codex pass (next) gives the plan one independent read, and executing-plans reviews it again critically before it runs. One advisory pass, not a back-and-forth — that's what keeps it fast.
+
+## Review the Plan with Codex (Background)
+
+An independent model reading the finished plan catches gaps, contradictions, and over-engineering — cheap to fix now, expensive to hit mid-implementation. Because it runs in the background and read-only, it adds a second pair of eyes without costing the "fast" feel. This is advisory, not a new approval loop.
+
+Kick it off the moment the plan file is written, then continue to the hand-off:
+
+- Reuse the Codex CLI mechanism directly (as in `review-with-codex` / `ask-codex`) — do **not** invoke those skills, and don't use `codex exec review` (that reviews git diffs, not a document).
+- Feed Codex the reviewer template at `plan-document-reviewer-prompt.md` (in this skill dir), with `[PLAN_FILE_PATH]` set to the plan you just wrote.
+- Run it read-only in the background via the Bash tool with `run_in_background: true`; the harness notifies you on completion — don't poll.
+
+```bash
+mkdir -p .tmp
+TS=$(date +%s)
+PROMPT=.tmp/codex-planreview-${TS}-prompt.md   # the reviewer template, [PLAN_FILE_PATH] filled in
+OUT=.tmp/codex-planreview-${TS}-answer.md
+LOG=.tmp/codex-planreview-${TS}.log
+
+codex exec \
+  --skip-git-repo-check \
+  -s read-only \
+  -o "$OUT" \
+  - < "$PROMPT" > "$LOG" 2>&1
+```
+
+Codex CLI flags vary by version — if a run exits non-zero with an "unexpected argument" message in `$LOG`, run `codex exec --help`, drop or swap the offending flag, and re-invoke once. If it still fails (auth lapsed, network), tell the user and hand off without the review — it's advisory, never a blocker.
+
+When Codex finishes, read `$OUT` and fold its findings into the hand-off: summarize the real issues, skip the nits, and say which you'd act on. Codex is a second opinion — verify each claim against the plan before treating it as true.
 
 ## Hand Off
 
-Once the plan is written:
+Once the plan is written and the codex review has come back (or clearly failed), fold any real findings into a single offer:
 
-**"Plan written to `docs/plans/...`. Want to tweak anything in it, or should I commit it and start implementation with executing-plans?"**
+**"Plan written to `docs/plans/...`. Codex flagged <the real issues, or 'nothing significant'>. Want me to fold those in or tweak anything, or should I commit it and start implementation with executing-plans?"**
+
+If the codex review is still running when you reach this point, say so and let the user choose to wait for it or proceed — don't silently block on it.
 
 - **If they want edits:** apply them, then re-offer.
 - **If proceed:** commit the plan document with a clear one-line message and no attribution, then invoke /executing-plans to implement it.
@@ -82,5 +114,5 @@ Once the plan is written:
 - **Decide low-stakes calls yourself** — correctness, then tradeoffs, then UX.
 - **Batch the pivotal questions** — one prompt, all at once, never a drip of one-at-a-time questions.
 - **One design, presented whole** — the complete picture in a single message.
-- **One real gate** — approve the design, then go; no section-by-section ceremony, no review loop.
+- **One real gate** — approve the design, then go; no section-by-section ceremony, no interactive review loop. Codex's background pass is advisory, not a gate.
 - **Same output as brainstorming** — same plan format, same `docs/plans/` location, same executing-plans handoff.
