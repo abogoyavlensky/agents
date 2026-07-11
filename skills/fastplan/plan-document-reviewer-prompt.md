@@ -3,7 +3,7 @@
 Prompt for the background Codex plan review (see "Review the Plan with Codex"
 in `SKILL.md`). Everything below the `---` is the prompt body: write it to
 `$PROMPT` with `[PLAN_FILE_PATH]` replaced by the plan you just wrote, then
-pipe it to `codex exec` read-only.
+pipe it to `codex exec` (sandbox bypassed — the prompt itself forbids edits).
 
 **Purpose:** verify the plan is complete, consistent, and ready to implement —
 one independent pass, advisory only.
@@ -11,6 +11,8 @@ one independent pass, advisory only.
 ---
 
 You are a plan document reviewer. Verify this plan is complete and ready for implementation.
+
+This is a review-only task: read the plan and any files you need for context, but do NOT modify, create, or delete any files.
 
 **Plan to review:** [PLAN_FILE_PATH]
 
