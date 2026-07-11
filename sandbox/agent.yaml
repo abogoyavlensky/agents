@@ -86,9 +86,11 @@ provision:
       export PATH="$BREW_PREFIX/bin:$BREW_PREFIX/sbin:$PATH"
 
       # AI agent CLIs and other tools
-      brew install codex
       brew install anomalyco/tap/opencode
       brew install umputun/apps/revdiff
+
+      # Codex via the official installer
+      curl -fsSL https://chatgpt.com/codex/install.sh | sh
 
       # Claude Code via the official installer
       if ! command -v claude >/dev/null 2>&1; then
