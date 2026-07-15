@@ -71,18 +71,19 @@ Where `<SCOPE_FLAG>` is exactly one of:
 Optional positional prompt at the end for focused instructions, e.g.
 `"Pay special attention to the new auth middleware in pkg/auth/"`. Keep it
 short; codex has a built-in review prompt. **Caveat (see flag compatibility
-below): some codex versions reject a positional PROMPT together with
-`--uncommitted`.** If you need a focused prompt, pair it with `--base`/`--commit`,
-or drop the prompt and rely on codex's built-in review prompt for the
-uncommitted case.
+below): recent codex versions reject a positional PROMPT together with
+`--uncommitted` AND with `--commit`.** Only `--base` is known to accept one;
+otherwise drop the prompt and rely on codex's built-in review prompt.
 
 > **Flag compatibility — verify before assuming.** Codex CLI flags vary by
 > version (checked against `codex-cli 0.135.0`). Two gotchas seen in practice:
 > - `--color never` is **rejected** (`unexpected argument '--color'`). Don't
 >   pass it. `-o` already writes a clean final message; ANSI in `$LOG` is
 >   harmless.
-> - A positional `PROMPT` **cannot** be combined with `--uncommitted`
->   (`the argument '--uncommitted' cannot be used with '[PROMPT]'`).
+> - A positional `PROMPT` **cannot** be combined with `--uncommitted` or
+>   `--commit` (`the argument '--commit <SHA>' cannot be used with '[PROMPT]'`,
+>   seen on codex-cli 0.142.x). Treat scope flags as prompt-incompatible by
+>   default; only `--base` is known to accept one.
 >
 > If a run fails with exit code 2 and an "unexpected/incompatible argument"
 > message in `$LOG`, run `codex exec review --help`, drop or swap the offending
