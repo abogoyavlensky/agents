@@ -87,16 +87,34 @@ For each `Can't resolve <sym>`: check whether let-go has it —
 `grep -rn '"<sym>"' <letgo>/pkg/rt/lang.go <letgo>/pkg/rt/core/*.lg` and
 `grep -rn 'defn <sym>\b' <letgo>/pkg/rt/core/*.lg`. Absent → a gap.
 
-### 3. Classify each gap
+### 3. Classify each gap — and decide *where the fix lives*
 
-| Kind | Signal | Route |
+Two questions per gap: *what kind* is it, and *which layer* should own it —
+`.lg` (`pkg/rt/core/*.lg`) or Go (`pkg/rt/*.go`, `pkg/vm/`).
+
+**Default to `.lg`; use Go only when the gap genuinely needs it.** let-go's
+self-hosted IR pipeline lowers `.lg` to native Go via the AOT path
+(`gogen_ir` / `lower_go.lg`), so a pure-Clojure implementation is *not* slower
+than hand-written Go — and it stays code the language can see, test, and optimize
+through its own pipeline. The maintainers explicitly want as much of let-go as
+*can* be written in let-go to live in `.lg`
+([nooga/let-go #519](https://github.com/nooga/let-go/issues/519) is the canonical
+statement of the boundary — read it when a fix's home is unclear). Every gap that
+lands in Go for no reason is code the language can't reach.
+
+| Gap kind | Signal | Home (why) |
 |---|---|---|
-| Already present | grep finds it | use it |
-| Missing stdlib fn | `Can't resolve <fn>`, easy to implement in Go/`.lg` | **fastplan** (let-go add) |
-| Reader/compiler gap | a valid Clojure form won't compile (e.g. empty `catch` body, a macro's field scoping) | **fastplan** (compiler) |
-| New value type needed | a real collection/type is required, not just a symbol (e.g. a working `PersistentQueue`) | **fastplan** (new Go type) |
-| JVM-only surface | classpath scan, reflection, mutable Java class — not meaningfully runnable under let-go | **fastplan**: compile-only *stub* that resolves + fails loudly if called, matching the existing `java.util.ArrayList` / `clojure.lang.RT` precedent |
-| Degraded-by-design | a feature that can load but can't fully work | note it; keep the example off that path |
+| Already present | grep finds it | — use it |
+| Pure stdlib fn | `Can't resolve <fn>`; a plain Clojure `defn` over existing let-go fns would do it (e.g. `class`, `uri?`, `monitor-enter`) | **`.lg`** — lowers to native Go; no reason to touch Go |
+| Stdlib fn needing one primitive | the body is Clojure but one step needs a vm capability it can't reach (a type check, a namespace/registry lookup) | **`.lg` fn + one tiny exported Go primitive** — the reflection-kernel pattern (#519 item 3): export `public-vars`/`indexed?`-style building blocks from Go, write the fn in `.lg` |
+| Load-only / throw-on-call stub | a JVM-only surface is *referenced* but not runnable (classpath scan, reflection, a formatter built at load) | **`.lg` compat-stubs module** (`pkg/rt/core/compat_stubs.lg`, #519 item 4). Go only for the `DefNSBare` kernel that *creates* a bare host namespace (`clojure.lang.RT` etc.) — the stub fn bodies are `.lg`. (The older all-Go `ArrayList`/`RT` stubs are the pattern this supersedes.) |
+| Reader / compiler gap | a valid Clojure form won't compile (empty `catch`, field scoping) | **Go compiler** (runs before `.lg` loads) — but IR-side desugaring can be `.lg` where the pipeline allows (#476 catch-desugaring precedent) |
+| New value type | a real mutable/collection type is needed (a working queue/deque/map) | **Go** *for now* — a `.lg` `deftype` can't yet emit the full collection interface set (#519 item 2); note it as a future `.lg`-deftype candidate so it's not forgotten |
+| Interop dispatch / host-class & host-method / static-registration tables | `.method` on a native value; `(instance? Class x)`; `Class/staticFn` resolution | **Go** — init-time machinery, correctly Go (#519 non-goals). If the static-method surface keeps *growing*, propose **one bulk-registration helper**, not another wall of one-off `ns.Def`s |
+| Degraded-by-design | loads but can't fully work | note it; keep the example off that path |
+
+Everything still routes to **fastplan** (step 4) — the point of this table is to
+tell fastplan *which layer* to plan for.
 
 Prefer fixes that **fail loudly** over ones that return plausible-but-wrong
 values. A stub that throws when called beats one that silently lies.
@@ -104,14 +122,17 @@ values. A stub that throws when called beats one that silently lies.
 ### 4. Route let-go work to fastplan
 
 If **any** gap needs a let-go change, don't edit let-go here. Write a tight gap
-report — for each: a minimal repro, the exact error, and a proposed fix
-(file + approach) — then invoke the **fastplan** skill with it, noting the plan
-targets the let-go repo (`<letgo>`). fastplan produces the plan; executing-plans
-implements it; then rebuild `lg` and return to step 2 to confirm the library now
-loads and runs. A concrete gap report makes fastplan far more effective, so
-invest in it. (Reminder for the implementer: editing `pkg/rt/core/*.lg`
-requires regenerating the bundle — `go run -tags bootstrap ./cmd/lgbgen` — before
-`go test`/`make build`.)
+report — for each: a minimal repro, the exact error, its **home** (`.lg` vs Go,
+per step 3) with a one-line reason, and a proposed fix (file + approach) — then
+invoke the **fastplan** skill with it, noting the plan targets the let-go repo
+(`<letgo>`). Making the home explicit is what steers fastplan to the right layer;
+default it to `.lg` and justify any Go landing. fastplan produces the plan;
+executing-plans implements it; then rebuild `lg` and return to step 2 to confirm
+the library now loads and runs. A concrete gap report makes fastplan far more
+effective, so invest in it. (Reminder for the implementer: editing
+`pkg/rt/core/*.lg` requires regenerating the bundle —
+`go run -tags bootstrap ./cmd/lgbgen` — before `go test`/`make build`; a fix that
+lands mostly in `.lg` needs this, a pure-Go fix does not.)
 
 If **no** let-go change is needed (the library already works, or after fixes
 land), go straight to the example.
@@ -164,3 +185,7 @@ ones. Keep each doc's `Verify against:` footer accurate.
 - **Report gaps so an upstream maintainer would accept them** — each as a
   standalone, general let-go improvement with a minimal repro, not "integrant
   needs it." Mention the library as motivation.
+- **Land it in `.lg`, Go only when it must** — the maintainers are actively
+  moving the language into itself (#519). A pile of one-off `ns.Def`s or a Go
+  loud-stub that a plain `.lg` `defn` could express reads as landing in the wrong
+  layer, even if it works. Pick the home in step 3, state it in the report.
