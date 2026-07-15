@@ -29,7 +29,7 @@ For each task:
 2. Follow each step exactly (plan has bite-sized steps)
 3. Run verifications as specified, commit as the task directs
 4. Kick off the `review-with-codex` skill — it runs codex CLI against the just-committed work for a second-opinion review. Wait for it to finish before moving on (blocking checkpoint).
-5. Address any **must fix** findings codex returns as a fixup commit. If the changes are non-trivial, re-run `review-with-codex` to confirm. Advisory findings: note and move on.
+5. Address any **must fix** findings codex returns as a fixup commit. If the changes are non-trivial, re-run `review-with-codex` to confirm. Advisory findings: note and move on. Max review rounds 3.
 6. Mark the task as `completed` with TaskUpdate and check off its steps in the plan document
 
 ### Deviations: What You May Decide vs. When to Stop
