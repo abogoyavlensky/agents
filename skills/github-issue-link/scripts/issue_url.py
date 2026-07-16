@@ -22,10 +22,10 @@ import argparse
 import sys
 import urllib.parse
 
-# GitHub silently truncates or errors on very long prefill URLs. ~8 KB is a safe
-# ceiling in practice; warn past it rather than fail, since the user may still
-# get a usable (if clipped) form and can fall back to paste.
-SAFE_URL_LEN = 8000
+# GitHub rejects long prefill URLs with a 400, and the ceiling is far lower than
+# the HTTP limit — a ~4 KB URL has been observed to fail. Warn well below that so
+# the body gets trimmed before it breaks; ~2 KB is reliable in practice.
+SAFE_URL_LEN = 2000
 
 
 def main():
@@ -80,8 +80,9 @@ def main():
     if len(url) > SAFE_URL_LEN:
         print(
             f"warning: URL is {len(url)} chars (> {SAFE_URL_LEN}). GitHub may "
-            "clip a very long prefill. Consider trimming the body, or filing "
-            "with `gh issue create --body-file` if you have write access.",
+            "reject a long prefill URL with a 400. Trim the body (keep the full "
+            "version in the saved file to paste after filing), or use "
+            "`gh issue create --body-file` if you have write access.",
             file=sys.stderr,
         )
     else:

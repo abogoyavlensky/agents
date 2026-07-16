@@ -134,6 +134,20 @@ effective, so invest in it. (Reminder for the implementer: editing
 `go run -tags bootstrap ./cmd/lgbgen` — before `go test`/`make build`; a fix that
 lands mostly in `.lg` needs this, a pure-Go fix does not.)
 
+**New-file header.** Any **new Go source file** the fix adds (`pkg/rt/*.go`,
+`pkg/vm/*.go`) opens with the project's standard MIT header, attributed
+generically to **`let-go contributors`** — not an individual's name — so
+attribution stays uniform across the tree (this is what recent let-go files
+already do). Use the current year. New `pkg/rt/core/*.lg` files carry no such
+header. Fold this into the gap report so the implementer applies it:
+
+```
+/*
+ * Copyright (c) 2026 let-go contributors
+ * SPDX-License-Identifier: MIT
+ */
+```
+
 If **no** let-go change is needed (the library already works, or after fixes
 land), go straight to the example.
 

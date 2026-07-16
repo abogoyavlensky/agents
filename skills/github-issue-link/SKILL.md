@@ -52,6 +52,16 @@ in control of the final submit.
    the body as normal GitHub-flavored markdown — the script handles all
    URL-encoding, so don't pre-encode anything.
 
+   Keep the body about the **problem or proposal itself** — what's missing or
+   broken and why it matters (and, for a feature, the shape of the change) — so
+   it stands on its own for anyone reading it later. Don't tie it to a specific
+   upcoming PR ("a branch is ready", "I'll open a PR referencing this"): an
+   issue outlives any one PR, maintainers usually want to discuss the design
+   before code lands, and such promises read as presumptuous and go stale if the
+   PR changes or never appears. Describe the need and let the PR's own
+   description carry the implementation — if a fix already exists, note that a
+   solution looks feasible, not that a particular branch/PR is inbound.
+
 3. **Build the URL** with the bundled script:
 
    ```bash
@@ -71,10 +81,13 @@ in control of the final submit.
    the form prefilled, so they just review and submit. Mention the body is also
    saved at `<path>` for copy-paste.
 
-5. **Mind the length.** If the script warns the URL exceeds the safe length
-   (~8 KB), the body is probably too long for a reliable prefill. Offer to trim
-   it, or — if the user does have write access — fall back to
-   `gh issue create --body-file`.
+5. **Mind the length.** GitHub rejects long prefill URLs with a **400**, and the
+   ceiling is far lower than the HTTP limit — a ~4 KB URL has been observed to
+   400 — so keep it well under ~2 KB (the script warns past that). If the body is
+   too big, trim it to the essentials and keep the fuller version in the saved
+   file for the user to paste in after filing (GitHub lets them edit the body).
+   If the user has write access, `gh issue create --body-file` sidesteps the URL
+   limit entirely.
 
 ## After filing
 
