@@ -7,7 +7,7 @@ vmType: "vz"
 mountType: "virtiofs"
 
 cpus: 4
-memory: "4GiB"
+memory: "6GiB"
 disk: "60GiB"
 
 user:
