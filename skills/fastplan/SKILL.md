@@ -23,7 +23,7 @@ Do NOT write code, scaffold, or invoke any implementation skill until the user h
 
 4. **Approval gate** — ask whether the design looks right or any key decision needs adjusting. Iterate quickly if so. This is the main place the user steers.
 
-5. **Write the plan** — once the design is agreed, write the full detailed plan to `docs/plans/YYYY-MM-DD-<topic>.md` following `plan-format-guide.md` (in this skill dir).
+5. **Write the plan** — once the design is agreed, write the full detailed plan to `docs/plans/YYYY-MM-DD-HHMM-<topic>.md` following `plan-format-guide.md` (in this skill dir).
 
 6. **Review the plan with codex (background)** — the moment the plan file exists, kick off a read-only Codex review of it in the background using the plan-document-reviewer template. It runs async while you do the hand-off, so it costs no critical-path time. Advisory, not a new gate. (details below) Max review rounds 3.
 
@@ -59,7 +59,7 @@ If the user wants changes, fold them in and re-present only what changed — no 
 
 ## Write the Plan
 
-After the design is agreed, write the full implementation plan to `docs/plans/YYYY-MM-DD-<topic>.md`.
+After the design is agreed, write the full implementation plan to `docs/plans/YYYY-MM-DD-HHMM-<topic>.md`. Get the prefix with `date +%Y-%m-%d-%H%M` — don't guess the time. The HHMM part keeps several same-day plans sorted in creation order, which a date alone can't do.
 
 - Follow `plan-format-guide.md` (in this skill dir) for structure: the standard header, then `## Design`, `## File Structure`, and bite-sized `### Task N:` sections with checkbox (`- [ ]`) steps that executing-plans can mark off.
 - The plan must be self-contained — fold the approved design into it so the executor has full context without the chat history.
