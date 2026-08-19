@@ -71,7 +71,7 @@ file to see what it `:require`s and which host/JVM surfaces it touches
 (`clojure.lang.*`, `java.*`, reader conditionals, `defrecord`/`deftype`,
 `defmulti`, `defprotocol`).
 
-### 2. Probe: load it under `lg` and read the first error
+### 2. Probe: load, smoke, then run its test suite — reading the first error each time
 
 ```
 LG_READ_CLJ=1 <lg> -source-paths "<dep1-src>:<dep2-src>" \
@@ -82,6 +82,37 @@ Then **functionally smoke it** — call the library's headline fns on real input
 (build its core value, run its main operation) — because a namespace can register
 after a swallowed load error. Fix/route the first error, rebuild `lg` if it was a
 let-go change, re-run. Repeat until it loads clean AND the smoke works.
+
+**If the library ships tests, run them — it is the strongest probe available.**
+A smoke test proves one happy path; the library's own suite walks its whole
+surface and turns "seems to work" into a number you can act on. Write a throwaway
+runner and put both `src` and `test` on `-source-paths`:
+
+```clojure
+;; .tmp/<lib>-suite.lg — scratch, not committed
+(require 'test)
+(def nss '[lib.core-test lib.util-test])
+(doseq [n nss] (require n))
+(test/run-tests)
+```
+
+```
+LG_READ_CLJ=1 <lg> -source-paths "<lib>/src:<lib>/test" .tmp/<lib>-suite.lg
+```
+
+Two harness quirks to know before blaming the library: `(apply test/run-tests
+nss)` currently breaks (the explicit-namespaces branch calls `name` on a
+Namespace object), so use the no-arg form — it runs every registered ns; and
+judge the outcome from the printed `Tests: … Pass: … Fail: … Error: …` summary
+rather than the exit code. Expect the harness itself to have gaps: a missing
+`clojure-version`, or an `is` form let-go doesn't support, can stop an entire
+test file from loading — each is its own routable gap, and a file that won't load
+hides everything behind it.
+
+Record the baseline (tests / assertions / failures) **before** any fix, then
+collapse the failures into root causes — a dozen red tests usually reduce to a
+handful — and pin each to a minimal repro that fails today. The baseline is how
+you later prove the fixes landed, and the repro list *is* most of the gap report.
 
 For each `Can't resolve <sym>`: check whether let-go has it —
 `grep -rn '"<sym>"' <letgo>/pkg/rt/lang.go <letgo>/pkg/rt/core/*.lg` and
@@ -112,9 +143,20 @@ lands in Go for no reason is code the language can't reach.
 | New value type | a real mutable/collection type is needed (a working queue/deque/map) | **Go** *for now* — a `.lg` `deftype` can't yet emit the full collection interface set (#519 item 2); note it as a future `.lg`-deftype candidate so it's not forgotten |
 | Interop dispatch / host-class & host-method / static-registration tables | `.method` on a native value; `(instance? Class x)`; `Class/staticFn` resolution | **Go** — init-time machinery, correctly Go (#519 non-goals). If the static-method surface keeps *growing*, propose **one bulk-registration helper**, not another wall of one-off `ns.Def`s |
 | Degraded-by-design | loads but can't fully work | note it; keep the example off that path |
+| Not let-go's to fix | the difference is the library's to absorb: Go `re2` regex has no lookbehind/lookahead, Java-only formatting, JVM class names | **the library's `:lg` reader-conditional branch** — routing it upstream spends a maintainer's time on something let-go isn't going to change |
 
-Everything still routes to **fastplan** (step 4) — the point of this table is to
+Everything else routes to **fastplan** (step 4) — the point of this table is to
 tell fastplan *which layer* to plan for.
+
+**Two backends implement the same semantics.** let-go compiles through the
+bytecode compiler (`pkg/compiler/`) *and* a self-hosted IR builder
+(`pkg/rt/core/ir/build.lg`), which implement resolution, arity, and special-form
+behavior separately. A fix to one usually needs its mirror in the other, or the
+gap just moves: under `*ir-compile*` the IR path either throws (strict mode) or
+silently falls back to bytecode — so the fix looks complete while quietly not
+applying, and tests on the default path won't notice. When a gap is
+compiler-shaped, grep the IR builder for the same form and say in the report
+whether both paths need it.
 
 Prefer fixes that **fail loudly** over ones that return plausible-but-wrong
 values. A stub that throws when called beats one that silently lies.
@@ -129,10 +171,36 @@ invoke the **fastplan** skill with it, noting the plan targets the let-go repo
 default it to `.lg` and justify any Go landing. fastplan produces the plan;
 executing-plans implements it; then rebuild `lg` and return to step 2 to confirm
 the library now loads and runs. A concrete gap report makes fastplan far more
-effective, so invest in it. (Reminder for the implementer: editing
-`pkg/rt/core/*.lg` requires regenerating the bundle —
-`go run -tags bootstrap ./cmd/lgbgen` — before `go test`/`make build`; a fix that
-lands mostly in `.lg` needs this, a pure-Go fix does not.)
+effective, so invest in it.
+
+Three implementer-facing facts belong in every report, because a plan that omits
+them ships red CI:
+
+**The generated artifacts are tracked — and Go changes stale them too.** let-go
+commits `pkg/rt/core_compiled.lgb` plus a dependency manifest
+(`pkg/rt/generated.manifest`, `pkg/rt/generated.sums`) holding a digest for every
+generator and input. `make generate` refreshes all three; **commit all three**.
+This is not just an `.lg` concern, which is the trap: 87 `pkg/vm/*.go` files —
+plus `pkg/compiler/` and `pkg/bytecode/` — are registered as bundle *generators*,
+so a one-file Go change stales the manifest exactly as an `.lg` edit does. The
+gate is `make check-generated`, which CI runs and **`make test` does not**, so
+the local loop that actually proves a change is clean is
+`make test && make check-generated`. (`pkg/rt/core_go_lowered/` is gitignored —
+regenerated, never committed.)
+
+**Flipping a documented limitation means flipping its tests.** let-go asserts its
+own limitations in the suite (`test/readme_limitations_test.lg`, plus per-feature
+files like `test/reify_test.lg`) and documents them in `README.md` and
+`docs/guide/clojure-compatibility.md`. When the gap you're routing *is* one of
+those, `make test` fails by design until those assertions are inverted — name the
+exact files in the report so the plan budgets for them instead of discovering
+them mid-implementation.
+
+**Semantics changes need the compat suite.** For anything touching core data
+structures or evaluation semantics, `make clojure-compat-report` (the jank
+clojure-test-suite corpus) is the honest regression check — the README quotes its
+pass count, so a drop there is a release blocker, and a clean run is the evidence
+that a deep change is safe.
 
 **New-file header.** Any **new Go source file** the fix adds (`pkg/rt/*.go`,
 `pkg/vm/*.go`) opens with the project's standard MIT header, attributed
@@ -190,12 +258,18 @@ ones. Keep each doc's `Verify against:` footer accurate.
 ## Common gotchas (learned the hard way)
 
 - **Silent require failure** — always functionally smoke; ":loaded" lies.
-- **Rebuild `lg`** after any Go change; **regenerate the bundle**
-  (`go run -tags bootstrap ./cmd/lgbgen`) after any `pkg/rt/core/*.lg` change.
+- **Rebuild `lg` after every change** — Go *or* `.lg` — before trusting a probe;
+  a stale binary is the most common way to fix the same thing twice. Note that
+  `make build` can mtime-skip regeneration after a branch switch or a conflicted
+  checkout; `make generate` forces it.
 - **`defrecord`/`deftype` field scope, `case` constants, empty `catch` body,
-  a real `PersistentQueue`, `find-var`/`get-method`** — all were real let-go
-  gaps found this exact way. Expect the next lib to surface its own; treat a new
-  `Can't resolve`/compile error as a sub-gap to route, not a wall.
+  a real `PersistentQueue`, `find-var`/`get-method`, `clojure.test`'s `thrown?`,
+  `#'other-ns/private-var`, invokable symbols, exactly-min variadic arity,
+  `reify Object` overrides, insertion-ordered small maps** — all were real let-go
+  gaps found this exact way. Note how many are *semantics*, not missing fns: a
+  library can fail on behavior that resolves fine. Expect the next lib to surface
+  its own; treat a new `Can't resolve`/compile error/wrong answer as a sub-gap to
+  route, not a wall.
 - **Report gaps so an upstream maintainer would accept them** — each as a
   standalone, general let-go improvement with a minimal repro, not "integrant
   needs it." Mention the library as motivation.
