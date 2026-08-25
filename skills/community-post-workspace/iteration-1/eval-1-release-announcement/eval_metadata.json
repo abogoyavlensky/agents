@@ -1,0 +1,10 @@
+{
+  "eval_id": 1,
+  "eval_name": "release-announcement-wtr",
+  "prompt": "wtr v0.2.2 just shipped. write a short discord announcement for the #wtr channel. repo is /Users/andrew/Projects/wtr",
+  "assertions": [
+    {"text": "Names at least one real change from the v0.2.1..v0.2.2 git history (not invented features)"},
+    {"text": "Contains an upgrade command (brew upgrade/install)"},
+    {"text": "Contains no em-dash characters"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "eval_id": 0,
+  "eval_name": "welcome-pin-wtr",
+  "prompt": "I'm going to start a #wtr channel on a Discord server with developers. Help me write the first welcome pinned message. The project repo is /Users/andrew/Projects/wtr.",
+  "assertions": [
+    {"text": "Contains a copy-pasteable install/try snippet using the README's real command (brew install abogoyavlensky/tap/wtr)"},
+    {"text": "Contains no em-dash characters"},
+    {"text": "Short enough for a Discord pin (roughly 15 lines of visible text or fewer) and says what to post in the channel"}
+  ]
+}

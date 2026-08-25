@@ -1,0 +1,25 @@
+{
+ "expectations": [
+  {
+   "text": "Contains a copy-pasteable install/try snippet using the README's real command (brew install abogoyavlensky/tap/wtr)",
+   "passed": true,
+   "evidence": "Install section includes the correct brew and mise commands."
+  },
+  {
+   "text": "Contains no em-dash characters",
+   "passed": false,
+   "evidence": "grep count for em-dash: 8."
+  },
+  {
+   "text": "Short enough for a Discord pin (~15 lines or fewer) and says what to post in the channel",
+   "passed": false,
+   "evidence": "42 lines with README-style section headers; has a what-to-post section but at pin-unfriendly length."
+  }
+ ],
+ "summary": {
+  "passed": 1,
+  "failed": 2,
+  "total": 3,
+  "pass_rate": 0.3333333333333333
+ }
+}

@@ -1,0 +1,25 @@
+{
+ "expectations": [
+  {
+   "text": "Names at least one real change from the v0.2.1..v0.2.2 git history (not invented features)",
+   "passed": true,
+   "evidence": "Completion fix from the tiny-cli v0.2.2 bump, which is the real release content."
+  },
+  {
+   "text": "Contains an upgrade command (brew upgrade/install)",
+   "passed": true,
+   "evidence": "`brew upgrade wtr` (works for an installed tap formula, though the tap-qualified form is safer) plus mise."
+  },
+  {
+   "text": "Contains no em-dash characters",
+   "passed": false,
+   "evidence": "grep count: 1."
+  }
+ ],
+ "summary": {
+  "passed": 2,
+  "failed": 1,
+  "total": 3,
+  "pass_rate": 0.6666666666666666
+ }
+}

@@ -1,0 +1,10 @@
+{
+  "eval_id": 2,
+  "eval_name": "status-update-lgx",
+  "prompt": "help me write a status update post for my project's discord channel about what's currently in the works. repo: /Users/andrew/Projects/lgx",
+  "assertions": [
+    {"text": "Distinguishes released (v0.1.2) from unreleased branch work; does not present go-deps/cross-compilation as already installable"},
+    {"text": "Each in-flight bullet names a concrete user-visible payoff, not just a feature label"},
+    {"text": "Contains no em-dash characters"}
+  ]
+}

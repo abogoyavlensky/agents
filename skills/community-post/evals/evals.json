@@ -1,0 +1,23 @@
+{
+  "skill_name": "community-post",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I'm going to start a #wtr channel on a Discord server with developers. Help me write the first welcome pinned message. The project repo is /Users/andrew/Projects/wtr. Save the final message as markdown to <OUTPUT_DIR>/welcome-pin.md",
+      "expected_output": "A short Discord-ready welcome pin: hook explaining what wtr gives you, copy-pasteable install+try snippet matching the README, links, what-to-post guidance, honest maturity note. No unreleased features.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "wtr v0.2.2 just shipped. write a short discord announcement for the #wtr channel. repo is /Users/andrew/Projects/wtr. Save the final message as markdown to <OUTPUT_DIR>/release-announcement.md",
+      "expected_output": "A short unpinned announcement grounded in what actually changed between v0.2.1 and v0.2.2 (from git history/changelog), with the upgrade command and a link.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "help me write a status update post for my project's discord channel about what's currently in the works. repo: /Users/andrew/Projects/lgx. Save the final message as markdown to <OUTPUT_DIR>/status-update.md",
+      "expected_output": "A bullet status update that distinguishes released (v0.1.2 on master) from unreleased branch work (go deps, cross-compilation on go-deps branch), concrete payoffs per bullet, closing released/unreleased line.",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+ "expectations": [
+  {
+   "text": "Distinguishes released (v0.1.2) from unreleased branch work; does not present go-deps/cross-compilation as already installable",
+   "passed": false,
+   "evidence": "Lists 'Maven deps', the lib template, and the aero/malli examples under 'Recently shipped (v0.1.2)', but git log v0.1.2..master shows #40 and #37 are NOT in v0.1.2 - unreleased work presented as shipped. The go-deps section itself is honestly marked unreleased."
+  },
+  {
+   "text": "Each in-flight bullet names a concrete user-visible payoff, not just a feature label",
+   "passed": true,
+   "evidence": "Concrete throughout (lgx.edn snippet, cold ~10-15s timings, next.jdbc-shaped API)."
+  },
+  {
+   "text": "Contains no em-dash characters",
+   "passed": false,
+   "evidence": "grep count: 10."
+  }
+ ],
+ "summary": {
+  "passed": 1,
+  "failed": 2,
+  "total": 3,
+  "pass_rate": 0.3333333333333333
+ }
+}

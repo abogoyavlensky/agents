@@ -1,0 +1,25 @@
+{
+ "expectations": [
+  {
+   "text": "Distinguishes released (v0.1.2) from unreleased branch work; does not present go-deps/cross-compilation as already installable",
+   "passed": true,
+   "evidence": "Explicit 'Released vs not: none of this is in v0.1.2'; correctly states #40 is merged on master and ships in the next release; caught that PR #40's title ('mvn deps') misdescribes the actual feature and described the real behavior."
+  },
+  {
+   "text": "Each in-flight bullet names a concrete user-visible payoff, not just a feature label",
+   "passed": true,
+   "evidence": "SQLite pure-Go driver in a single static binary; --all over a :platforms matrix from one machine; --dry-run sizes before deleting."
+  },
+  {
+   "text": "Contains no em-dash characters",
+   "passed": true,
+   "evidence": "grep count: 0."
+  }
+ ],
+ "summary": {
+  "passed": 3,
+  "failed": 0,
+  "total": 3,
+  "pass_rate": 1.0
+ }
+}
