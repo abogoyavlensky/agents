@@ -48,6 +48,9 @@ provision:
       # mise-managed tools (shims must be on PATH for non-interactive shells)
       export PATH="$HOME/.local/share/mise/shims:$PATH"
 
+      # Fix ghostty for non-interactive shells
+      TERM=xterm-256color
+
       # aliases
       alias gs="git status"
       alias gpo='git push origin HEAD'
