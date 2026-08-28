@@ -1,0 +1,12 @@
+# Managed by server/spot.yml. `mise install` reads this file; do not run
+# `mise use -g` on the box or the next playbook run overwrites your drift.
+#
+# github: everywhere - the ubi backend is deprecated upstream
+# ("The ubi backend is deprecated. Please use the GitHub backend instead.")
+[tools]
+node                        = "24"
+gh                          = "latest"
+"github:umputun/revdiff"    = "latest"
+"github:umputun/spot"       = "latest"
+"github:anomalyco/opencode" = "latest"
+"github:abogoyavlensky/skl" = "latest"

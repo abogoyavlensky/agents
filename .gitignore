@@ -1,3 +1,19 @@
 .system
 skills/skills
 .images/
+
+# --- server/ (spot) ---
+server/inventory.yml
+server/*.local.yml
+server/spot.log
+
+# --- credentials: none of this should ever be committed ---
+.env
+.env.*
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+secrets*
+*.token
+.netrc

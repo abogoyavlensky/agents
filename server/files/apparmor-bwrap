@@ -1,0 +1,15 @@
+# Ubuntu 24.04 ships kernel.apparmor_restrict_unprivileged_userns=1, whose
+# profile denies all capabilities inside a new user namespace - which breaks
+# bwrap (and so codex's sandbox) with:
+#   bwrap: setting up uid map: Permission denied
+#   bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted
+#
+# This exempts one binary instead of disabling the hardening machine-wide.
+# Pinned to /usr/bin/bwrap on purpose: codex's vendored copy sits under a
+# path containing the node and codex versions, and moves on every upgrade.
+abi <abi/4.0>,
+include <tunables/global>
+profile bwrap /usr/bin/bwrap flags=(unconfined) {
+  userns,
+  include if exists <local/bwrap>
+}

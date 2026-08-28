@@ -1,0 +1,21 @@
+# --- agent dev env (managed by server/spot.yml - edit files/bashrc.agent) ---
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+eval "$($HOME/.local/bin/mise activate bash)"
+export GH_PROMPT_DISABLED=1     # never block an agent on an interactive gh prompt
+
+# --- git aliases ---
+# HUMANS ONLY. Bash disables alias expansion in non-interactive shells and
+# Ubuntu's stock .bashrc returns early for them, so `bash -c 'gs'` - which is
+# how an agent runs commands - gets nothing. For agent-usable shortcuts use
+# real git aliases in ~/.gitconfig.
+#
+# gcb/rd are ported verbatim from sandbox/agent.yaml. `$1` and `"$@"` are
+# no-ops in an alias (expansion is textual, so the argument lands after the
+# empty expansion and it works by accident). Kept as-is for parity.
+alias gs="git status"
+alias gpo='git push origin HEAD'
+alias gg='git log --graph --pretty=format:'\''%C(bold)%h%Creset%C(magenta)%d%Creset %s %C(yellow)<%an> %C(cyan)(%cr)%Creset'\'' --abbrev-commit --date=relative'
+alias gcam='git commit -v -am'
+alias gcmp='git checkout master && git pull origin master'
+alias gcb='git checkout -b $1'
+alias rd='revdiff "$@"'

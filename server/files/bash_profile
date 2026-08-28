@@ -1,0 +1,6 @@
+# Login shells. Ubuntu's ~/.profile adds ~/.local/bin (so `bash -lc mise`
+# works) but NOT the mise shims dir - so `bash -lc node` silently fails and
+# `bash -lc gh` silently resolves to /usr/bin/gh instead of the mise one.
+# Set both here.
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+[ -f ~/.bashrc ] && . ~/.bashrc

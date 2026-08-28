@@ -58,14 +58,27 @@ apt update && apt install -y \
 `systemd-journald` defaults to consuming up to 10% of the filesystem. On a
 long-uptime box that's often several GB.
 
+Use a drop-in, not `sed -i` on `journald.conf`:
+
 ```bash
-sed -i 's/^\[Journal\]/[Journal]\nSystemMaxUse=200M\nSystemMaxFileSize=50M/' /etc/systemd/journald.conf
-journalctl --vacuum-size=200M
+mkdir -p /etc/systemd/journald.conf.d
+cat > /etc/systemd/journald.conf.d/99-agent.conf <<'EOF'
+[Journal]
+SystemMaxUse=200M
+SystemMaxFileSize=50M
+EOF
+
 systemctl restart systemd-journald
+journalctl --vacuum-size=200M
 journalctl --disk-usage      # verify: should now report ~200M, not GB
 ```
 
 The `SystemMaxUse` cap is the part that matters — vacuuming alone lets it regrow.
+
+> **Why a drop-in and not `sed -i 's/^\[Journal\]/.../'`?** That sed re-matches
+> its own output. Run it twice and `journald.conf` ends up with two
+> `SystemMaxUse=` lines under one `[Journal]` header. Verified. A drop-in file is
+> idempotent by construction and leaves the distro's config untouched.
 
 If Docker is present, reclaim dead containers — but **check before pruning images**:
 
