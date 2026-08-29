@@ -7,7 +7,12 @@ This automates Steps 1–12 of [`../sandbox/fresh_server_setup.md`](../sandbox/f
 **Read that runbook first** — it explains *why* each step exists. This directory
 is the executable form; the runbook is the reasoning.
 
-Sized for **6 vCPU / 12 GB**. Connects as `root`.
+Sized for **6 vCPU / ~11.4 GiB**. Connects as the `ubuntu` sudo user (every
+command carries `sudo: true`), not as root.
+
+**Verified end to end on Ubuntu 26.04 LTS "resolute"** — provisioned a fresh box,
+ran three times, `verify` green with all 30 checks including the idempotency
+counters. Also targets 24.04; the `packages` task refuses anything else.
 
 ## Install spot
 
@@ -27,39 +32,52 @@ $EDITOR inventory.yml
 ## Run
 
 ```bash
-spot -p spot.yml -i inventory.yml -t agentbox -n survey   # read-only, review first
-spot -p spot.yml -i inventory.yml -t agentbox             # tasks 1-11
+spot -p manual.yml -i inventory.yml -t agentbox -n survey   # read-only, review first
+spot -p spot.yml   -i inventory.yml -t agentbox             # the whole box
 ```
 
 Then the two steps that **must** be done by a human (see below):
 
 ```bash
-ssh agent@<host> ./setup-gh-auth.sh                       # MANUAL 1 - GitHub token
-spot -p spot.yml -i inventory.yml -t agentbox -n skills
-ssh agent@<host>                                          # MANUAL 2 - permission rule
-spot -p spot.yml -i inventory.yml -t agentbox -n verify-github
+ssh agent@<host> ./setup-gh-auth.sh                         # MANUAL 1 - GitHub token
+spot -p manual.yml -i inventory.yml -t agentbox -n skills
+ssh agent@<host>                                            # MANUAL 2 - permission rule
+spot -p manual.yml -i inventory.yml -t agentbox -n verify-github
 ```
 
 ## Tasks
 
-| Task | Auto | What |
-|---|---|---|
-| `survey` | no | Read-only audit: capacity, users, privileged groups, secrets in argv |
-| `packages` | yes | apt baseline; refuses to run on anything but 24.04 |
-| `docker` | yes | Engine from the official repo; asserts `agent` ∉ `docker` |
-| `journald` | yes | 200 MB cap via drop-in |
-| `swap` | yes | 8 GB swapfile, `vm.swappiness=10` |
-| `agent-user` | yes | `agent` at **uid 1001**, home 0700, SSH keys, no sudo/docker |
-| `limits` | yes | cgroup slice: MemoryHigh 6500M / Max 9G / CPUQuota 580% |
-| `agent-files` | yes | `.bashrc.agent`, `.bash_profile`, mise config, gh helper, setup scripts |
-| `toolchain` | yes | mise → node/gh/revdiff/opencode/spot/skl, Claude Code, Codex |
-| `git-config` | yes | Identity, `insteadOf` rewrites, git aliases |
-| `verify` | yes | Boundary + limits + toolchain + idempotency counters |
-| `skills` | no | Clone agents repo, link skills — *needs gh auth first* |
-| `bwrap-apparmor` | no | Exempt bwrap from 24.04 userns hardening — *see below* |
-| `verify-github` | no | Assert the token can't reach secrets/keys/hooks — *needs gh auth* |
+`spot.yml` holds everything that runs unattended. `manual.yml` holds the opt-in
+tasks — same `files/`, selected with `-n`.
 
-Run a single task with `-n <task>`.
+**spot.yml**
+
+| Task | What |
+|---|---|
+| `packages` | apt baseline; refuses anything but Ubuntu 24.04 / 26.04 |
+| `docker` | Engine from the official repo (codename derived, not pinned); asserts `agent` ∉ `docker` |
+| `journald` | 200 MB cap via drop-in |
+| `swap` | 8 GB swapfile, `vm.swappiness=10` |
+| `agent-user` | `agent` at **uid 1001**, home 0700, SSH keys, no sudo/docker |
+| `limits` | cgroup slice: MemoryHigh 6400M / Max 8500M / CPUQuota 580% |
+| `agent-files` | `.bashrc.agent`, `.bash_profile`, mise config, gh helper, setup scripts |
+| `toolchain` | mise → node/gh/revdiff/opencode/spot/skl, Claude Code, Codex |
+| `git-config` | Identity, `insteadOf` rewrites, git aliases |
+| `verify` | Boundary + limits + toolchain + idempotency counters (30 checks) |
+
+**manual.yml**
+
+| Task | What |
+|---|---|
+| `survey` | Read-only audit: capacity, users, privileged groups, secrets in argv |
+| `skills` | Clone agents repo, link skills — *needs gh auth first* |
+| `bwrap-apparmor` | Exempt bwrap from the userns hardening — *see below* |
+| `verify-github` | Assert the token can't reach secrets/keys/hooks — *needs gh auth* |
+
+> **Why two files rather than `no_auto`?** `no_auto` is **not** overridden by
+> `-n`. Verified: `-n survey` ran the task and executed *0 commands*. The
+> documented escape hatch is `--only`, which matches the full command name —
+> unusable in practice. Two playbooks sharing one `files/` dir is simpler.
 
 ## What is deliberately NOT automated
 
@@ -132,6 +150,19 @@ same problem — it runs as root and can flip `.bashrc` to `root:root`, which
 silently breaks the agent's shell, so that too is followed by a `chown`.
 
 **`cond:` works on `script` and `echo` only** — not on `copy` or `line`.
+
+**`copy` cannot take a directory.** `src: files/agent/` fails with
+`read files/agent/: is a directory`. Use a glob: `src: "files/agent/*.sh"`.
+
+**`--dry` does not reliably evaluate `cond:`.** On a fresh box it reported
+*create swapfile* and *create agent* as `skip` — both of which must run. Every
+`!`-prefixed cond showed as skipped, every plain one as running, regardless of
+actual remote state. Treat `--dry` as a syntax and connectivity check only; it
+also still opens an SSH connection, so it fails outright against an unreachable
+host.
+
+**The AppArmor userns hardening is still on in 26.04**, so the codex/bwrap
+problem carries forward from 24.04 unchanged.
 
 **`NEEDRESTART_MODE=a` on every apt call.** Ubuntu 24.04's needrestart opens a
 whiptail service-restart prompt that hangs a TTY-less run indefinitely.

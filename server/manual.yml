@@ -1,0 +1,80 @@
+# Opt-in tasks for the agent dev server. Kept OUT of spot.yml because they
+# need a human first, or are destructive, or are situational.
+#
+#   spot -p manual.yml -i inventory.yml -t agentbox -n survey
+#   spot -p manual.yml -i inventory.yml -t agentbox -n skills
+#
+# These were originally `no_auto` commands inside spot.yml. That did not work:
+# `no_auto` is NOT overridden by -n (verified - the task runs and executes 0
+# commands), and the documented escape hatch, --only, matches on the full
+# command name, which is unusable in practice. A second playbook sharing the
+# same files/ dir is simpler and makes -n behave normally.
+
+user: ubuntu
+ssh_key: /root/.ssh/id_ed25519_spot
+
+tasks:
+  # ---------------------------------------------------------------- survey --
+  - name: survey
+    commands:
+      - name: "read-only audit - run this BEFORE anything else"
+        options: {sudo: true}
+        script: |
+          echo "== os =="; . /etc/os-release; echo "  $PRETTY_NAME"
+          echo "== capacity =="
+          echo "  cores=$(nproc)  ram=$(free -g | awk '/Mem:/{print $2}')G  swap=$(free -g | awk '/Swap:/{print $2}')G"
+          df -h / | tail -1 | sed 's/^/  /'
+          echo "== journal =="; journalctl --disk-usage | sed 's/^/  /'
+          echo "== existing users (uid>=1000) =="
+          awk -F: '$3>=1000 && $3<65534 {print "  "$1" "$3" "$6}' /etc/passwd
+          echo "== privileged groups =="; getent group sudo docker | sed 's/^/  /'
+          echo "== running containers =="; (docker ps 2>/dev/null || echo "  no docker") | sed 's/^/  /'
+          echo "== secrets exposed in argv =="
+          ps -eo user,args | grep -iE 'token|bearer|api[-_]?key' | grep -v grep | sed 's/^/  /' || echo "  none"
+
+
+  # ------------------------------------------------- manual / opt-in tasks --
+  - name: skills
+    commands:
+      - name: "clone the agents repo and link skills (needs gh auth first)"
+        options: {sudo: true}
+        script: sudo -u agent -H /usr/local/lib/agent-setup/50-skills.sh
+
+
+  - name: bwrap-apparmor
+    commands:
+      # Only worth running if you intend codex to run SANDBOXED here. If your
+      # other environments (Lima) cannot sandbox, the skills must keep
+      # --dangerously-bypass-approvals-and-sandbox and this buys nothing.
+      - name: "install bubblewrap (gives a stable /usr/bin/bwrap path)"
+        options: {sudo: true}
+        script: |
+          export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a
+          apt-get install -y bubblewrap
+
+      - name: "apparmor profile exempting bwrap from the userns hardening"
+        options: {sudo: true}
+        copy: {src: files/apparmor-bwrap, dst: /etc/apparmor.d/bwrap}
+
+      - name: "load the profile and prove bwrap works"
+        options: {sudo: true}
+        script: |
+          set -eu
+          apparmor_parser -r /etc/apparmor.d/bwrap
+          bwrap --ro-bind / / --unshare-all /bin/true && echo "bwrap OK"
+
+
+  - name: verify-github
+    commands:
+      - name: "token ceiling - all of these MUST be blocked (needs gh auth)"
+        options: {sudo: true}
+        script: |
+          set -u
+          R="${GH_TEST_REPO:-abogoyavlensky/scratch-notes}"
+          for ep in "/repos/$R/actions/secrets" "/repos/$R/keys" "/repos/$R/hooks" "/user/emails"; do
+            if sudo -u agent -H bash -lc "gh api $ep" >/dev/null 2>&1; then
+              echo "  FAIL $ep is ACCESSIBLE - token is too broad"
+            else
+              echo "  ok   $ep blocked"
+            fi
+          done

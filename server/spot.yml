@@ -12,39 +12,27 @@
 #
 # Target: fresh Ubuntu 24.04, 6 vCPU / 12 GB. Connects as root.
 
-user: root
+user: ubuntu
 ssh_key: /root/.ssh/id_ed25519_spot
 
 tasks:
-  # ---------------------------------------------------------------- survey --
-  - name: survey
-    commands:
-      - name: "read-only audit - run this BEFORE anything else"
-        options: {no_auto: true}
-        script: |
-          echo "== os =="; . /etc/os-release; echo "  $PRETTY_NAME"
-          echo "== capacity =="
-          echo "  cores=$(nproc)  ram=$(free -g | awk '/Mem:/{print $2}')G  swap=$(free -g | awk '/Swap:/{print $2}')G"
-          df -h / | tail -1 | sed 's/^/  /'
-          echo "== journal =="; journalctl --disk-usage | sed 's/^/  /'
-          echo "== existing users (uid>=1000) =="
-          awk -F: '$3>=1000 && $3<65534 {print "  "$1" "$3" "$6}' /etc/passwd
-          echo "== privileged groups =="; getent group sudo docker | sed 's/^/  /'
-          echo "== running containers =="; (docker ps 2>/dev/null || echo "  no docker") | sed 's/^/  /'
-          echo "== secrets exposed in argv =="
-          ps -eo user,args | grep -iE 'token|bearer|api[-_]?key' | grep -v grep | sed 's/^/  /' || echo "  none"
 
   # -------------------------------------------------------------- packages --
   - name: packages
     commands:
       - name: "refuse to run on anything but 24.04 (files/docker.list pins noble)"
+        options: {sudo: true}
         script: |
           . /etc/os-release
-          [ "$VERSION_ID" = "24.04" ] || { echo "FATAL: expected Ubuntu 24.04, got $VERSION_ID"; exit 1; }
+          case "$VERSION_ID" in
+            24.04|26.04) echo "ok: Ubuntu $VERSION_ID ($VERSION_CODENAME)" ;;
+            *) echo "FATAL: untested on Ubuntu $VERSION_ID"; exit 1 ;;
+          esac
 
       # NEEDRESTART_MODE=a is not optional: Ubuntu 24.04's needrestart opens a
       # whiptail service-restart prompt that hangs a TTY-less run indefinitely.
       - name: "apt baseline"
+        options: {sudo: true}
         script: |
           export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a
           apt-get update
@@ -54,17 +42,20 @@ tasks:
             openssh-client gnupg gpg-agent iproute2 \
             libssl-dev zlib1g-dev
 
+
   # ---------------------------------------------------------------- docker --
   - name: docker
     commands:
       - name: "docker apt repo + engine"
+        options: {sudo: true}
         script: |
           export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a
           install -m 0755 -d /etc/apt/keyrings
           curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
             -o /etc/apt/keyrings/docker.asc
           chmod a+r /etc/apt/keyrings/docker.asc
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu noble stable" \
+          . /etc/os-release
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $VERSION_CODENAME stable" \
             > /etc/apt/sources.list.d/docker.list
           apt-get update
           apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -73,6 +64,7 @@ tasks:
       # HARD GATE. Docker group membership is root-equivalent
       # (docker run -v /:/host) and would silently void the entire boundary.
       - name: "assert agent is NOT in the docker group"
+        options: {sudo: true}
         script: |
           if id agent >/dev/null 2>&1; then
             if id -nG agent | tr ' ' '\n' | grep -qx docker; then
@@ -82,6 +74,7 @@ tasks:
           fi
           echo "ok: docker group = [$(getent group docker | cut -d: -f4)]"
 
+
   # -------------------------------------------------------------- journald --
   - name: journald
     commands:
@@ -89,17 +82,20 @@ tasks:
       # re-matches its own output: run it twice and journald.conf ends up with
       # two SystemMaxUse lines under one header. Verified.
       - name: "cap journald via drop-in"
+        options: {sudo: true}
         copy:
           src: files/99-agent-journald.conf
           dst: /etc/systemd/journald.conf.d/99-agent.conf
           mkdir: true
 
       - name: "vacuum + restart only while the journal is still oversized"
+        options: {sudo: true}
         script: |
           systemctl restart systemd-journald
           journalctl --vacuum-size=200M
           journalctl --disk-usage
         cond: "journalctl --disk-usage | grep -qE '[0-9.]+G|[0-9.]+T'"
+
 
   # ------------------------------------------------------------------ swap --
   - name: swap
@@ -107,6 +103,7 @@ tasks:
       # The one step where a blind re-run does real damage: fallocate over a
       # LIVE swapfile corrupts it.
       - name: "create swapfile"
+        options: {sudo: true}
         script: |
           set -eu
           fallocate -l 8G /swapfile
@@ -116,30 +113,37 @@ tasks:
         cond: "! test -e /swapfile"
 
       - name: "swapon an existing-but-inactive swapfile (post-reboot / partial run)"
+        options: {sudo: true}
         script: swapon /swapfile
         cond: "test -e /swapfile && ! swapon --noheadings --show=NAME | grep -qx /swapfile"
 
       # match= already finds it, so append never duplicates.
       - name: "persist across reboots"
+        options: {sudo: true}
         line:
           file: /etc/fstab
           match: '^/swapfile\s'
           append: "/swapfile none swap sw 0 0"
 
       - name: "vm tunables"
+        options: {sudo: true}
         copy: {src: files/99-agent-vm.conf, dst: /etc/sysctl.d/99-agent-vm.conf}
 
       - name: "apply vm tunables"
+        options: {sudo: true}
         script: sysctl -q -p /etc/sysctl.d/99-agent-vm.conf
+
 
   # ------------------------------------------------------------ agent-user --
   - name: agent-user
     commands:
       - name: "create agent (uid pinned to 1001 - the slice drop-in path is uid-derived)"
+        options: {sudo: true}
         script: useradd -m -u 1001 -s /bin/bash -c "Agent development user" agent
         cond: "! id agent"
 
       - name: "assert uid, then lock down the home dir"
+        options: {sudo: true}
         script: |
           set -eu
           uid=$(id -u agent)
@@ -151,6 +155,7 @@ tasks:
           install -d -m 755 -o agent -g agent /home/agent/Projects
 
       - name: "assert no sudo/docker privileges"
+        options: {sudo: true}
         script: |
           for g in sudo docker; do
             if id -nG agent | tr ' ' '\n' | grep -qx "$g"; then
@@ -160,37 +165,55 @@ tasks:
           echo "ok: agent groups = $(id -nG agent)"
 
       - name: "SSH access with the same keys as root"
+        options: {sudo: true}
         script: |
           set -eu
           install -d -m 700 -o agent -g agent /home/agent/.ssh
-          install -m 600 -o agent -g agent /root/.ssh/authorized_keys /home/agent/.ssh/authorized_keys
+          # We may connect as `ubuntu` rather than root, so prefer whichever
+          # authorized_keys actually has content.
+          for src in /root/.ssh/authorized_keys /home/ubuntu/.ssh/authorized_keys; do
+            if [ -s "$src" ]; then
+              install -m 600 -o agent -g agent "$src" /home/agent/.ssh/authorized_keys
+              echo "seeded agent authorized_keys from $src"
+              break
+            fi
+          done
+          test -s /home/agent/.ssh/authorized_keys || { echo "FATAL: no authorized_keys source"; exit 1; }
+
 
   # ---------------------------------------------------------------- limits --
   - name: limits
     commands:
       - name: "cgroup caps for the agent login slice"
+        options: {sudo: true}
         copy:
           src: files/50-agent-limits.conf
           dst: /etc/systemd/system/user-1001.slice.d/50-agent-limits.conf
           mkdir: true
 
       - name: "reload systemd"
+        options: {sudo: true}
         script: systemctl daemon-reload
 
       - name: "linger so the user manager and tmux survive logout"
+        options: {sudo: true}
         script: loginctl enable-linger agent
         cond: 'test "$(loginctl show-user agent -p Linger --value 2>/dev/null)" != "yes"'
+
 
   # ----------------------------------------------------------- agent-files --
   - name: agent-files
     commands:
       - name: "managed interactive env + git aliases"
+        options: {sudo: true}
         copy: {src: files/bashrc.agent, dst: /home/agent/.bashrc.agent}
 
       - name: "login-shell PATH (adds the mise shims dir that ~/.profile omits)"
+        options: {sudo: true}
         copy: {src: files/bash_profile, dst: /home/agent/.bash_profile}
 
       - name: "mise tool declaration"
+        options: {sudo: true}
         copy:
           src: files/mise-config.toml
           dst: /home/agent/.config/mise/config.toml
@@ -199,6 +222,7 @@ tasks:
       # spot's copy cannot set owner/group/mode. House rule: every copy whose
       # dst is under /home/agent gets a paired chown immediately after.
       - name: "chown everything copied into /home/agent"
+        options: {sudo: true}
         script: |
           set -eu
           chown agent:agent /home/agent/.bashrc.agent /home/agent/.bash_profile
@@ -206,20 +230,24 @@ tasks:
           chown -R agent:agent /home/agent/.config
 
       - name: "hook the managed block into the stock .bashrc"
+        options: {sudo: true}
         line:
           file: /home/agent/.bashrc
           match: '\.bashrc\.agent'
           append: '[ -f "$HOME/.bashrc.agent" ] && . "$HOME/.bashrc.agent"'
 
       - name: "restore .bashrc ownership (the line edit above ran as root)"
+        options: {sudo: true}
         script: chown agent:agent /home/agent/.bashrc
 
       - name: "gh auth helper"
+        options: {sudo: true}
         copy: {src: files/setup-gh-auth.sh, dst: /home/agent/setup-gh-auth.sh}
 
       # Deliberately NOT chowned to agent: the agent may EXECUTE this script
       # but must not be able to EDIT the thing a human types a token into.
       - name: "assert gh helper is root-owned 0755"
+        options: {sudo: true}
         script: |
           chown root:root /home/agent/setup-gh-auth.sh
           chmod 755 /home/agent/setup-gh-auth.sh
@@ -227,39 +255,51 @@ tasks:
       # Root-owned, outside /home/agent, so root never executes agent-writable
       # code (Operating rule 1). They are only ever run via sudo -u agent.
       - name: "agent-side setup scripts"
+        options: {sudo: true}
+        # NOTE: a glob, not `src: files/agent/`. spot's copy cannot take a
+        # directory ("read files/agent/: is a directory") - verified.
         copy:
-          src: files/agent/
+          src: "files/agent/*.sh"
           dst: /usr/local/lib/agent-setup/
           mkdir: true
           chmod+x: true
 
       - name: "assert setup scripts are root-owned"
+        options: {sudo: true}
         script: chown -R root:root /usr/local/lib/agent-setup
+
 
   # ------------------------------------------------------------- toolchain --
   - name: toolchain
     commands:
       - name: "mise + everything declared in config.toml"
+        options: {sudo: true}
         script: sudo -u agent -H /usr/local/lib/agent-setup/10-mise.sh
 
       - name: "Claude Code"
+        options: {sudo: true}
         script: sudo -u agent -H /usr/local/lib/agent-setup/20-claude.sh
         cond: "! test -x /home/agent/.local/bin/claude"
 
       - name: "Codex (+ mise reshim, without which the shim never appears)"
+        options: {sudo: true}
         script: sudo -u agent -H /usr/local/lib/agent-setup/30-codex.sh
         cond: "! test -x /home/agent/.local/share/mise/shims/codex"
+
 
   # ------------------------------------------------------------ git-config --
   - name: git-config
     commands:
       - name: "git identity, insteadOf rewrites, agent-usable git aliases"
+        options: {sudo: true}
         script: sudo -u agent -H /usr/local/lib/agent-setup/40-git.sh
+
 
   # ---------------------------------------------------------------- verify --
   - name: verify
     commands:
       - name: "boundary, limits, toolchain, and idempotency counters"
+        options: {sudo: true}
         script: |
           set -u
           fail=0
@@ -278,7 +318,7 @@ tasks:
           chk "no setuid under home"      '[ -z "$(find /home/agent -perm -4000 -o -perm -2000 2>/dev/null)" ]'
 
           echo "== limits live =="
-          chk "MemoryMax=9G"              '[ "$(systemctl show user-1001.slice -p MemoryMax --value)" = 9663676416 ]'
+          chk "MemoryMax=8500M"           '[ "$(systemctl show user-1001.slice -p MemoryMax --value)" = 8912896000 ]'
           chk "MemoryHigh set"            '[ "$(systemctl show user-1001.slice -p MemoryHigh --value)" != infinity ]'
           chk "CPUQuota set"              '[ "$(systemctl show user-1001.slice -p CPUQuotaPerSecUSec --value)" != infinity ]'
           chk "linger on"                 '[ "$(loginctl show-user agent -p Linger --value)" = yes ]'
@@ -305,50 +345,7 @@ tasks:
           echo "$fail CHECK(S) FAILED"; exit 1
 
       - name: "agent tools run unprivileged in the right slice"
+        options: {sudo: true}
         script: |
           systemd-run --uid=agent --gid=agent --slice=user-1001.slice --scope --quiet \
             bash -c 'echo "  user=$(id -un) euid=$EUID"; grep -o "user-1001.slice" /proc/self/cgroup | head -1'
-
-  # ------------------------------------------------- manual / opt-in tasks --
-  - name: skills
-    commands:
-      - name: "clone the agents repo and link skills (needs gh auth first)"
-        options: {no_auto: true}
-        script: sudo -u agent -H /usr/local/lib/agent-setup/50-skills.sh
-
-  - name: bwrap-apparmor
-    commands:
-      # Only worth running if you intend codex to run SANDBOXED here. If your
-      # other environments (Lima) cannot sandbox, the skills must keep
-      # --dangerously-bypass-approvals-and-sandbox and this buys nothing.
-      - name: "install bubblewrap (gives a stable /usr/bin/bwrap path)"
-        options: {no_auto: true}
-        script: |
-          export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a
-          apt-get install -y bubblewrap
-
-      - name: "apparmor profile exempting bwrap from the userns hardening"
-        options: {no_auto: true}
-        copy: {src: files/apparmor-bwrap, dst: /etc/apparmor.d/bwrap}
-
-      - name: "load the profile and prove bwrap works"
-        options: {no_auto: true}
-        script: |
-          set -eu
-          apparmor_parser -r /etc/apparmor.d/bwrap
-          bwrap --ro-bind / / --unshare-all /bin/true && echo "bwrap OK"
-
-  - name: verify-github
-    commands:
-      - name: "token ceiling - all of these MUST be blocked (needs gh auth)"
-        options: {no_auto: true}
-        script: |
-          set -u
-          R="${GH_TEST_REPO:-abogoyavlensky/scratch-notes}"
-          for ep in "/repos/$R/actions/secrets" "/repos/$R/keys" "/repos/$R/hooks" "/user/emails"; do
-            if sudo -u agent -H bash -lc "gh api $ep" >/dev/null 2>&1; then
-              echo "  FAIL $ep is ACCESSIBLE - token is too broad"
-            else
-              echo "  ok   $ep blocked"
-            fi
-          done
