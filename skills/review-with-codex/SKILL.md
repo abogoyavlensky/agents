@@ -35,32 +35,60 @@ a wrong guess.
 
 ### 2. Pick output paths
 
-Save locally in the `.tmp` dir in the current repo:
+Save locally in the `.tmp` dir in the current repo. **Choose literal paths and
+write them into the command by hand** — no `$OUT`, no `TS=$(date +%s)`:
 
-```bash
-TS=$(date +%s)
-OUT=.tmp/codex-review-${TS}.md      # final review message
-LOG=.tmp/codex-review-${TS}.log     # full stdout/stderr for debugging
 ```
+.tmp/codex-review-<scope>.md    # final review message
+.tmp/codex-review-<scope>.log   # full stdout/stderr for debugging
+```
+
+Pick `<scope>` so runs don't collide — the commit sha, the task number, or the
+branch name (`.tmp/codex-review-task2.log`, `.tmp/codex-review-5a57a02.log`).
+
+Two reasons this isn't the shell-variable version it looks like it should be:
+
+- **Bash calls don't share state.** Each one is a fresh shell, so a `TS=`
+  assigned in one call is empty in the next. The variables only ever worked
+  because they were chained into a single `&&` command — which is exactly what
+  breaks the next point.
+- **The invocation has to *begin* with `codex`.** See step 3.
+
+Run `mkdir -p .tmp` if the directory is missing, folded into the git commands
+you already ran for scope resolution — not into the codex call.
 
 ### 3. Invoke codex in the background
 
 Run via the Bash tool with `run_in_background: true`. The harness will
 notify you on completion — do not poll.
 
+> **The command must start with `codex`, as a single bare command.** Hosts
+> allowlist this skill with a prefix rule — `Bash(codex:*)` or
+> `Bash(codex exec:*)` — that matches only when the command *begins* with that
+> string. Prefix it with anything (`mkdir -p .tmp && codex …`,
+> `TS=$(date +%s) && codex …`, `cd repo && codex …`) and the rule stops
+> matching, the call falls through to whatever permission classifier the host
+> applies, and `--dangerously-bypass-approvals-and-sandbox` is a plausible
+> thing for that classifier to refuse. The denial reads as "codex is broken";
+> it isn't. Do setup in a **separate** Bash call. A trailing redirect is fine —
+> the command still begins with `codex`.
+
 ```bash
 codex exec review \
   --skip-git-repo-check \
   --dangerously-bypass-approvals-and-sandbox \
   <SCOPE_FLAG> \
-  -o "$OUT" \
-  > "$LOG" 2>&1
+  -o .tmp/codex-review-<scope>.md \
+  > .tmp/codex-review-<scope>.log 2>&1
 ```
 
 `--dangerously-bypass-approvals-and-sandbox` is what makes a background run
 work: `codex exec review` is read-only, but without it codex can block on an
 approval/sandbox prompt with no TTY and the background job hangs until timeout.
 Safe here precisely because the review never writes.
+
+It is also, on many machines, the only mode that runs at all — read *Sandbox
+modes* below before reaching for `-s read-only` as a safer-looking substitute.
 
 Where `<SCOPE_FLAG>` is exactly one of:
 
@@ -76,17 +104,18 @@ below): recent codex versions reject a positional PROMPT together with
 otherwise drop the prompt and rely on codex's built-in review prompt.
 
 > **Flag compatibility — verify before assuming.** Codex CLI flags vary by
-> version (checked against `codex-cli 0.135.0`). Two gotchas seen in practice:
-> - `--color never` is **rejected** (`unexpected argument '--color'`). Don't
->   pass it. `-o` already writes a clean final message; ANSI in `$LOG` is
->   harmless.
+> version. Gotchas seen in practice:
 > - A positional `PROMPT` **cannot** be combined with `--uncommitted` or
 >   `--commit` (`the argument '--commit <SHA>' cannot be used with '[PROMPT]'`,
 >   seen on codex-cli 0.142.x). Treat scope flags as prompt-incompatible by
 >   default; only `--base` is known to accept one.
+> - `--color never` was **rejected** on codex-cli 0.135.0 (`unexpected argument
+>   '--color'`) and **accepted** on 0.151.0. You never need it — `-o` already
+>   writes a clean final message and ANSI in the log is harmless — so drop it at
+>   the first complaint rather than checking.
 >
 > If a run fails with exit code 2 and an "unexpected/incompatible argument"
-> message in `$LOG`, run `codex exec review --help`, drop or swap the offending
+> message in the log, run `codex exec review --help`, drop or swap the offending
 > flag, and re-invoke — don't keep retrying the same command.
 
 Tell the user: "Codex review started in the background (scope: …). I'll
@@ -97,10 +126,14 @@ the caller decides whether to block or carry on.
 
 When the background bash notifies completion:
 
-1. **Exit code ≠ 0** → read `$LOG`, surface the error to the user, and
+1. **Exit code ≠ 0** → read the `.log`, surface the error to the user, and
    suggest a fix (most common causes: codex auth lapsed, wrong flag for the
    installed codex version, repo not git-initialised).
-2. **Exit code = 0** → read `$OUT`. That's codex's final review message.
+2. **Exit code = 0** → read the `.md`. That's codex's final review message.
+   Read it before reporting: a broken sandbox (see *Sandbox modes*) exits 0
+   with a report saying it reviewed nothing. "No findings" and "could not
+   look" are not the same result, and only one is worth relaying as
+   reassurance.
 3. Summarise findings for the user, **grouped by severity** (must fix /
    should fix / nit) with file:line citations when codex provided them.
    Quote codex's text where possible — it's a second opinion, not your own.
@@ -112,6 +145,46 @@ When the background bash notifies completion:
 
 Leave `.tmp/codex-review-*` files in place — they age out naturally and are
 useful for debugging a bad review run.
+
+## Sandbox modes
+
+`-s read-only` looks like the responsible choice for a review. On many
+containers it does not work at all: codex sandboxes with **bubblewrap**, and if
+`bwrap` is missing from PATH — or present but unable to configure a network
+namespace — every command codex runs fails before it starts:
+
+```
+bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted
+```
+
+Codex handles this honestly rather than silently: it reports back that it could
+not inspect anything and declines to invent findings. So the run *succeeds*
+(exit 0) while the report says "unable to review" — check the report body, not
+just the exit code.
+
+Check with `command -v bwrap`. If it's absent and you can't install it (no
+passwordless sudo), `--dangerously-bypass-approvals-and-sandbox` is the only
+working mode. That is a safe trade *for this skill specifically*: review never
+writes, and an agent host is already a sandbox.
+
+## When codex can't run git at all
+
+If the sandbox is broken and the bypass flag is unavailable too, codex can
+still review — give it everything inline so it needs no shell:
+
+```bash
+codex exec -s read-only --skip-git-repo-check -o .tmp/codex-review-<scope>.md - \
+  < .tmp/codex-review-<scope>.prompt.md \
+  > .tmp/codex-review-<scope>.log 2>&1
+```
+
+Build the prompt file in an earlier Bash call from the `code-review` skill's
+instructions plus the material codex would otherwise fetch itself: `git log`
+for the scope, `git diff -U20`, and the handful of unchanged files a reviewer
+needs for call sites and intent. Tell it explicitly that no shell is available
+and to report what it cannot judge rather than guessing. This produces a real
+review — it costs you the judgement about *which* surrounding files matter,
+which codex would otherwise make for itself.
 
 ## Flags worth knowing
 
