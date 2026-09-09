@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "A new file was created under docs/backlog/ with a kebab-case name and no date or number in it",
+      "passed": true,
+      "evidence": "file top-form-nested-comment-sent-whole.md"
+    },
+    {
+      "text": "The file's first line is a '# ' title that states the observed behavior as a sentence, and the next non-blank line is exactly '**Status: open**'",
+      "passed": true,
+      "evidence": "line1='# Evaluate Top Form sends a nested `(comment \u2026)` whole instead of the body form under the cursor'; line2='**Status: open**'"
+    },
+    {
+      "text": "The Problem section cites the code location by path (src/repl/forms.ts or the relevant function) rather than describing the symptom only",
+      "passed": true,
+      "evidence": "Problem cites src/repl/forms.ts:320 topFormAtCursor"
+    },
+    {
+      "text": "The file contains either a Fix / Proposed fix section or a 'Why it is left alone' section",
+      "passed": true,
+      "evidence": "['## Problem', '## Proposed fix', '## Origin']"
+    },
+    {
+      "text": "The file has an Origin section saying where and when the issue surfaced",
+      "passed": true,
+      "evidence": "Origin section present with date 2026-09-09"
+    },
+    {
+      "text": "The entry was committed in its own commit (git-log shows a commit whose message says Backlog or docs: backlog) and no source file outside docs/ was modified",
+      "passed": true,
+      "evidence": "first log line: '375a1b5 Backlog: Evaluate Top Form sends a nested comment block whole'; status: ''"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  }
+}

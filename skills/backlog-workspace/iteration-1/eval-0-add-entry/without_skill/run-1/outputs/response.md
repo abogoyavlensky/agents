@@ -1,0 +1,5 @@
+Noted in the backlog: `docs/backlog/nested-comment-block-sent-whole.md` (status: open, left uncommitted).
+
+One correction while writing it up: the behaviour you describe belongs to **Evaluate Top Form**, not Evaluate Current Form. `formAtCursor` has no comment handling at all — it always resolves the innermost form. The comment-block descent lives in `topFormAtCursor` (`src/repl/forms.ts:320`), and stopping after one level was a deliberate choice in the Evaluate Top Form plan, pinned by a test: `top("(comment (comment |x))")` expects `(comment x)` (`src/test/forms.test.ts:426`). The entry records that, so whoever picks it up knows the test has to flip rather than being a regression.
+
+The entry also sketches the fix: after `resolveCommentBody` picks a body form, recurse when that form is itself a bare `(comment …)` with the cursor between its brackets, so the head/gap fallback and the prefixed-comment exclusion keep working at every depth; then update the doc comment and the two README lines that say "directly under `comment`".

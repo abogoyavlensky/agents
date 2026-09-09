@@ -1,0 +1,5 @@
+53a299d release 0.5.0
+f8b92dc feat: choose ; or ;; for Toggle Line Comment (#30)
+c17dfd9 Add Evaluate Top Form command (#29)
+3dbe382 Add Clear status bar command (#28)
+58a2b6a Start REPL asks which REPL when more than one is configured (#27)

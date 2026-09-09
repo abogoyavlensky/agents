@@ -1,0 +1,13 @@
+{
+  "eval_id": 0,
+  "eval_name": "add-entry",
+  "prompt": "While testing Evaluate Current Form inside rich comment blocks I noticed that a `(comment ...)` nested inside another `(comment ...)` is sent whole: with the cursor inside the inner comment's body, the whole inner `(comment ...)` form gets evaluated and returns nil, instead of the body form under the cursor like it does for a top-level comment block. I'm not fixing that in this PR. Note it for later.",
+  "assertions": [
+    "A new file was created under docs/backlog/ with a kebab-case name and no date or number in it",
+    "The file's first line is a '# ' title that states the observed behavior as a sentence, and the next non-blank line is exactly '**Status: open**'",
+    "The Problem section cites the code location by path (src/repl/forms.ts or the relevant function) rather than describing the symptom only",
+    "The file contains either a Fix / Proposed fix section or a 'Why it is left alone' section",
+    "The file has an Origin section saying where and when the issue surfaced",
+    "The entry was committed in its own commit (git-log shows a commit whose message says Backlog or docs: backlog) and no source file outside docs/ was modified"
+  ]
+}

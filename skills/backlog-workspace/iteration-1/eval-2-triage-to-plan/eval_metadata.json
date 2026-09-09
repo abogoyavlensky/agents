@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "triage-to-plan",
+  "prompt": "let's pick up the format-selection column offset issue from the backlog and plan it. I'm away for a few hours so don't wait on me for questions, make the calls yourself. Write the plan, but don't start implementing.",
+  "assertions": [
+    "A plan file was created in docs/plans/ named YYYY-MM-DD-HHMM-<topic>.md (date and 4-digit time prefix)",
+    "The plan cites the backlog entry docs/backlog/format-selection-column-offset.md by path",
+    "The plan's design carries over the backlog entry's fix (pad the slice to the form's column, strip padding from output) and its notes (keep the glued-prefix walk, leave the whitespace-only branch, cover #?@ splicing in tests)",
+    "The plan includes a final task that closes the backlog entry (changes its status to done with a line saying where it landed)",
+    "The backlog entry's status line was changed from 'Status: open' to 'Status: planned' with a 'Plan: docs/plans/...' line pointing at the new plan",
+    "No source code under src/ was modified (only docs/ files changed)"
+  ]
+}

@@ -1,0 +1,5 @@
+a6dea2b Plan the Format Selection column offset fix
+53a299d release 0.5.0
+f8b92dc feat: choose ; or ;; for Toggle Line Comment (#30)
+c17dfd9 Add Evaluate Top Form command (#29)
+3dbe382 Add Clear status bar command (#28)

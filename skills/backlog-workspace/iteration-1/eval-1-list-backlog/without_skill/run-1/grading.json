@@ -1,0 +1,25 @@
+{
+  "expectations": [
+    {
+      "text": "The response lists all four open entries by title (format selection column offset, def-prefixed call highlighted as definition, jar scheme hardcoded, palette activation gate)",
+      "passed": true,
+      "evidence": "all four mentioned: ['format selection', 'def', 'jar', 'palette']"
+    },
+    {
+      "text": "The response recommends one specific entry to pick up first with a rationale grounded in value versus size/effort from the entries' own Fix or Why-left-alone sections",
+      "passed": true,
+      "evidence": "with_skill: palette gate (reach + established pattern); without_skill: format-selection (real wrong output, ~6 lines fully specified)"
+    },
+    {
+      "text": "No files were changed (git-status is empty)",
+      "passed": true,
+      "evidence": "git status: ''"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  }
+}

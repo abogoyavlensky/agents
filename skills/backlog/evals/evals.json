@@ -1,0 +1,44 @@
+{
+  "skill_name": "backlog",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "While testing Evaluate Current Form inside rich comment blocks I noticed that a `(comment ...)` nested inside another `(comment ...)` is sent whole: with the cursor inside the inner comment's body, the whole inner `(comment ...)` form gets evaluated and returns nil, instead of the body form under the cursor like it does for a top-level comment block. I'm not fixing that in this PR. Note it for later.",
+      "expected_output": "A new docs/backlog/<slug>.md entry with title, Status: open, Problem citing src/repl/forms.ts, Fix or Why-left-alone, Origin; committed on its own; no code changes.",
+      "files": [],
+      "expectations": [
+        "A new file was created under docs/backlog/ with a kebab-case name and no date or number in it",
+        "The file's first line is a '# ' title that states the observed behavior as a sentence, and the next non-blank line is exactly '**Status: open**'",
+        "The Problem section cites the code location by path (src/repl/forms.ts or the relevant function) rather than describing the symptom only",
+        "The file contains either a Fix / Proposed fix section or a 'Why it is left alone' section",
+        "The file has an Origin section saying where and when the issue surfaced",
+        "The entry was committed in its own commit (git-log shows a commit whose message says Backlog or docs: backlog) and no source file outside docs/ was modified"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "what's in the backlog? and which one would you pick up first, and why",
+      "expected_output": "Lists all four open entries by title, no done entries, and recommends one with a value-vs-size rationale drawn from the entries' Fix sections.",
+      "files": [],
+      "expectations": [
+        "The response lists all four open entries by title (format selection column offset, def-prefixed call highlighted as definition, jar scheme hardcoded, palette activation gate)",
+        "The response recommends one specific entry to pick up first with a rationale grounded in value versus size/effort from the entries' own Fix or Why-left-alone sections",
+        "No files were changed (git-status is empty)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "let's pick up the format-selection column offset issue from the backlog and plan it. I'm away for a few hours so don't wait on me for questions, make the calls yourself. Write the plan, but don't start implementing.",
+      "expected_output": "A plan in docs/plans/YYYY-MM-DD-HHMM-<topic>.md whose design carries over the backlog entry's fix and notes, cites the entry, and ends with a task closing it; the backlog entry status changed to planned with a Plan: line; no source code modified.",
+      "files": [],
+      "expectations": [
+        "A plan file was created in docs/plans/ named YYYY-MM-DD-HHMM-<topic>.md (date and 4-digit time prefix)",
+        "The plan cites the backlog entry docs/backlog/format-selection-column-offset.md by path",
+        "The plan's design carries over the backlog entry's fix (pad the slice to the form's column, strip padding from output) and its notes (keep the glued-prefix walk, leave the whitespace-only branch, cover #?@ splicing in tests)",
+        "The plan includes a final task that closes the backlog entry (changes its status to done with a line saying where it landed)",
+        "The backlog entry's status line was changed from 'Status: open' to 'Status: planned' with a 'Plan: docs/plans/...' line pointing at the new plan",
+        "No source code under src/ was modified (only docs/ files changed)"
+      ]
+    }
+  ]
+}

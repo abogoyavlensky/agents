@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "A plan file was created in docs/plans/ named YYYY-MM-DD-HHMM-<topic>.md (date and 4-digit time prefix)",
+      "passed": true,
+      "evidence": "2026-09-09-2230-format-selection-column-offset.md"
+    },
+    {
+      "text": "The plan cites the backlog entry docs/backlog/format-selection-column-offset.md by path",
+      "passed": true,
+      "evidence": "plan cites the entry path"
+    },
+    {
+      "text": "The plan's design carries over the backlog entry's fix (pad the slice to the form's column, strip padding from output) and its notes (keep the glued-prefix walk, leave the whitespace-only branch, cover #?@ splicing in tests)",
+      "passed": true,
+      "evidence": "pad/strip fix, glued-prefix walk kept, whitespace-only branch untouched, #?@ test"
+    },
+    {
+      "text": "The plan includes a final task that closes the backlog entry (changes its status to done with a line saying where it landed)",
+      "passed": true,
+      "evidence": "final task 'Close the backlog entry' sets Status: done with landing line"
+    },
+    {
+      "text": "The backlog entry's status line was changed from 'Status: open' to 'Status: planned' with a 'Plan: docs/plans/...' line pointing at the new plan",
+      "passed": true,
+      "evidence": "entry updated: Status: planned + Plan: line"
+    },
+    {
+      "text": "No source code under src/ was modified (only docs/ files changed)",
+      "passed": true,
+      "evidence": "changed files: ['git-status.txt', 'response.md', 'git-log.txt', 'docs/plans/2026-09-09-2230-format-selection-column-offset.md', 'docs/backlog/format-selection-column-offset.md']"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  }
+}

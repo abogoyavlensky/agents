@@ -1,0 +1,10 @@
+{
+  "eval_id": 1,
+  "eval_name": "list-backlog",
+  "prompt": "what's in the backlog? and which one would you pick up first, and why",
+  "assertions": [
+    "The response lists all four open entries by title (format selection column offset, def-prefixed call highlighted as definition, jar scheme hardcoded, palette activation gate)",
+    "The response recommends one specific entry to pick up first with a rationale grounded in value versus size/effort from the entries' own Fix or Why-left-alone sections",
+    "No files were changed (git-status is empty)"
+  ]
+}
