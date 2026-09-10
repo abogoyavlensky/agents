@@ -324,14 +324,16 @@ def decide(host: str, port: int, kind: str, rules: "Rules | None") -> tuple[bool
 **Files:**
 - Modify: `sandbox/README.md`
 
-- [ ] **Step 1: Add an "Egress control" section**
+- [x] **Step 1: Add an "Egress control" section**
   Cover, in this order and briefly: what is enforced (agent uid to loopback only, proxy allowlist, no sudo); the `lmadmin` alias `ssh -F ~/.lima/sandbox/ssh.config -o ControlPath=none -l admin lima-sandbox`; the allowlist workflow (seed with `*`, read `/var/log/agent-proxy/decisions.log`, edit in the VM or push from the repo with the `tee` one-liner, mtime reload); running `agent-egress-verify` after every VM recreation; the JVM stderr note and how to unset `JAVA_TOOL_OPTIONS`; the Docker notes (pulls and containers go through 10.0.2.2:8080, no external DNS inside containers); the known limitations list from the Design section.
 
-- [ ] **Step 2: Note the recreate requirement**
+- [x] **Step 2: Note the recreate requirement**
   Because `mode: data` files are embedded at create time, changes to `sandbox/egress/*` reach an existing instance only via `limactl delete` and `limactl create`, or by editing the embedded copy with `limactl edit`. Say so in one sentence.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
   `git commit -am "Document sandbox egress control"`
+
+  > Deviation: the discovery one-liner in the README strips the port and filters to allowed connect/http lines. Codex found that the decision log's fourth field is `host:port`, so the naive `awk '{print $4}'` would have produced entries the addon can never match, silently blocking everything once `*` was removed. Fixed in `443691f`.
 
 ### Task 7: Codex plan and code review checkpoint
 

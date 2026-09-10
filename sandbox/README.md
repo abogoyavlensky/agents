@@ -109,7 +109,8 @@ enforced:
   mitmproxy as its own user and allows only HTTPS on 443 and HTTP on 80 to
   hostnames on the allowlist. It does not intercept TLS; it compares the
   ClientHello's SNI with the host the client asked for and refuses the
-  connection when they differ.
+  connection when they differ. Raw TCP forwarding is off, so an allowed
+  CONNECT cannot be used to tunnel SSH or any other non-HTTP protocol.
 
 Tools pick the proxy up from `/etc/profile.d/agent-proxy.sh`, which every login
 shell reads - and every way into the VM (`limactl shell`, ssh, `mode: user`

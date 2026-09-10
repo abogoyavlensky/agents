@@ -6,6 +6,13 @@ way, and the TLS ClientHello's SNI must match the host the client asked to
 connect to - otherwise interception is left on and the handshake fails, because
 nothing in the VM trusts mitmproxy's CA.
 
+This only holds with `rawtcp` disabled, which `running()` enforces. With
+mitmproxy's default of `rawtcp=true`, tunnel contents that look like neither
+HTTP nor TLS are handed to a raw forwarding layer that never reaches a policy
+hook - an allowed CONNECT would carry SSH, or any other protocol, straight out.
+With it off, the same traffic falls through to the HTTP layer instead, where
+`request` denies it on the port rule.
+
 Every hook sets the deny outcome before doing anything that can raise, so a bug
 in here refuses traffic rather than passing it.
 
@@ -145,6 +152,17 @@ class AllowlistAddon:
             "decision_log", str, DEFAULT_DECISION_LOG, "Path to the decision log."
         )
 
+    def running(self):
+        # Independent of the service unit's flags: policy here assumes every
+        # byte inside a tunnel reaches a hook, which is only true without the
+        # raw TCP fallback.
+        try:
+            if ctx.options.rawtcp:
+                logger.warning("agent-proxy: forcing rawtcp=false")
+                ctx.options.update(rawtcp=False)
+        except Exception as exc:
+            logger.error("agent-proxy: could not disable rawtcp (%s)", exc)
+
     def configure(self, updates):
         if "allowlist" in updates:
             self._stamp = None  # force a reload on the next decision
@@ -235,8 +253,11 @@ class AllowlistAddon:
         self._log(allowed, "http", host, port, reason)
 
     def tls_clienthello(self, data):
-        # Leaving ignore_connection false means mitmproxy intercepts, and since
-        # no client here trusts its CA the handshake fails - which is the denial.
+        # ClientHelloData has no way to terminate a connection, so a denial here
+        # means leaving ignore_connection false: mitmproxy intercepts, the
+        # handshake fails against a CA nothing in the VM trusts, and even a
+        # client that ignores certificate errors only reaches the HTTP layer,
+        # where `request` refuses port 443. Both depend on rawtcp being off.
         host, port, sni = "", 0, ""
         try:
             address = data.context.server.address
