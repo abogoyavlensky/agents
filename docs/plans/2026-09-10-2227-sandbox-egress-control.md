@@ -349,7 +349,7 @@ def decide(host: str, port: int, kind: str, rules: "Rules | None") -> tuple[bool
   1. `rawtcp` defaults to true in mitmproxy, so tunnel contents that look like neither HTTP nor TLS go to a raw forwarding layer that never reaches a policy hook - an allowed `CONNECT ssh.github.com:443` would have carried SSH straight out. Now `--set rawtcp=false` in the unit, and the addon forces it off in `running()` so the policy does not depend on a flag someone can edit away.
   2. A mismatched SNI only left interception on. `ClientHelloData` has no API to terminate a connection, so the denial still works by interception - but with raw TCP off, a client that ignores certificate errors now reaches only the HTTP layer, where `request` refuses port 443. Documented in the addon.
 
-  > Deviation: the re-review after `f84a5d3` could not run - codex returned `You've hit your usage limit`. Verified by direct experiment instead (see the summary below), which is stronger evidence than a second read of the diff.
+  The re-review after `f84a5d3` first failed with `You've hit your usage limit`; re-run after the quota window reset it came back clean ("No actionable defects were identified in the changes relative to the specified merge base").
 
 ### Task 8: Manual verification on the Mac (human)
 
@@ -393,7 +393,7 @@ Tasks 1-7 are done and committed on `sandbox-egress-control`. Task 8 cannot run 
 - fail-closed confirmed: missing allowlist gives `no-allowlist`, empty gives `not-in-allowlist`, and `*` is picked up on an mtime change without a restart
 - `verify.sh` was run against the local proxy; all five proxy-dependent checks passed, and only the five that need the VM's sudo, firewall and DNS failed
 
-**Issues encountered.** Two codex findings were security bugs in the plan's own design (`pretty_host`, `rawtcp`), one was a bug in code written here (the Homebrew prefix symlink), and two were checks that would have failed on a healthy VM (`NO_PROXY` beating `-x`, `host:port` in the discovery one-liner). One plan claim was wrong about Lima and is corrected in the ruleset. The final codex re-review could not run - the account hit its usage limit - so the last fix was validated by experiment instead.
+**Issues encountered.** Two codex findings were security bugs in the plan's own design (`pretty_host`, `rawtcp`), one was a bug in code written here (the Homebrew prefix symlink), and two were checks that would have failed on a healthy VM (`NO_PROXY` beating `-x`, `host:port` in the discovery one-liner). One plan claim was wrong about Lima and is corrected in the ruleset. The final codex re-review of the whole branch is clean.
 
 **Deviations,** all recorded inline under their tasks:
 
