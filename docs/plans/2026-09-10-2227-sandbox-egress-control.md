@@ -244,24 +244,28 @@ def decide(host: str, port: int, kind: str, rules: "Rules | None") -> tuple[bool
 - Create: `sandbox/egress/agent-proxy.service`
 - Create: `sandbox/egress/verify.sh`
 
-- [ ] **Step 0: Write the profile script**
+- [x] **Step 0: Write the profile script**
   POSIX sh (profile.d scripts are sourced by dash on Ubuntu). `[ "$(id -u)" -eq 0 ] && return` guard first, then `export` the variables from the Design section's Tool configuration table, both cases. A comment on the `JAVA_TOOL_OPTIONS` line saying it may be commented out if the stderr notice annoys. Check with `sh -n sandbox/egress/profile-agent-proxy.sh`.
 
-- [ ] **Step 1: Write the allowlist seed**
+- [x] **Step 1: Write the allowlist seed**
   Header comment explaining the format (one host per line, matches subdomains, `*` means allow all, missing or empty file means deny all, edits picked up automatically). Active content: a single `*` line. Below it, a commented block titled "Starting point after discovery" listing the known hosts so the user can uncomment them later: `api.anthropic.com`, `claude.ai`, `platform.claude.com`, `downloads.claude.ai`, `code.claude.com`, `statsig.anthropic.com`, `sentry.io`, `chatgpt.com`, `api.openai.com`, `auth.openai.com`, `github.com`, `api.github.com`, `objects.githubusercontent.com`, `raw.githubusercontent.com`, `codeload.github.com`, `ghcr.io`, `registry.npmjs.org`, `pypi.org`, `files.pythonhosted.org`, `repo1.maven.org`, `repo.clojars.org`, `formulae.brew.sh`, `mise.run`, `mise.jdx.dev`, `registry-1.docker.io`, `auth.docker.io`, `production.cloudflare.docker.com`. Mark the list as unverified until the decision log confirms it.
 
-- [ ] **Step 2: Write the systemd unit**
+- [x] **Step 2: Write the systemd unit**
   `[Unit]`: description, `After=network-online.target nftables.service`, `Wants=network-online.target`. `[Service]`: `User=agent-proxy`, `Group=agent-proxy`, `StateDirectory=agent-proxy`, `LogsDirectory=agent-proxy`, `Environment=HOME=/var/lib/agent-proxy`, `ExecStart=/opt/mitmproxy/current/mitmdump --listen-host 127.0.0.1 --listen-port 8080 --set confdir=/var/lib/agent-proxy --set connection_strategy=lazy --set termlog_verbosity=warn -s /etc/agent-proxy/allowlist_addon.py --set allowlist=/etc/agent-proxy/allowlist.txt --set decision_log=/var/log/agent-proxy/decisions.log`, `Restart=always`, `RestartSec=2`, `NoNewPrivileges=yes`, `ProtectSystem=strict`, `ProtectHome=yes`, `PrivateTmp=yes`. `[Install]`: `WantedBy=multi-user.target`. Do not pass any proxy environment to this service.
 
-- [ ] **Step 3: Write the verify script**
+- [x] **Step 3: Write the verify script**
   Bash, `set -u`, a `check` helper that prints `PASS`/`FAIL` with the check name and counts failures, exits non-zero if any failed. Implement the ten checks from the Design section's Verification list. Direct-connection checks use numeric addresses only. Check 4 must distinguish connection refused (curl exit 7) from timeout (exit 28) and fail on timeout. Read the allowlist and print `SKIP` for checks 3, 9 and 10 if neither `*` nor `example.com` (and `example.org` for check 10) is present.
 
-- [ ] **Step 4: Static checks**
+- [x] **Step 4: Static checks**
   Run: `bash -n sandbox/egress/verify.sh && (command -v shellcheck >/dev/null && shellcheck sandbox/egress/verify.sh || echo "shellcheck not installed") && systemd-analyze verify sandbox/egress/agent-proxy.service 2>&1 | grep -v 'agent-proxy.service:.*Unit.*not found' ; echo done`
   Expected: no syntax errors; `systemd-analyze` may warn about the missing ExecStart binary on this machine, which is fine.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
   `git add sandbox/egress && git commit -m "Add allowlist seed, proxy service unit and verify script"`
+
+  > Deviation: check 5 passes `--noproxy ''` as well as `-x`. Codex found that curl honours `NO_PROXY` (which lists `127.0.0.1`) even when a proxy is given explicitly, so the check would have connected directly and failed on a healthy sandbox. Fixed in `79d1106`.
+  > Deviation: the `check` helper captures its function's status with `"$fn" || rc=$?` rather than reading `$?` after an `if`, where it is the compound statement's own status. Without this the SKIP path never fired and skipped checks were reported as failures.
+  > Deviation: `.gitignore` also ignores `__pycache__/`, since running the addon tests creates one next to the sources.
 
 ### Task 5: agent.yaml provisioning
 

@@ -121,7 +121,15 @@ provision:
       # --- homebrew prefix -----------------------------------------------------
       # The Homebrew installer would need sudo to create this; the agent no longer
       # has any, so pre-create it here, before user provisioning runs.
-      install -d -m 0755 -o agent -g "${AGENT_GROUP}" /home/linuxbrew
+      # /home/linuxbrew stays root-owned so the agent cannot replace .linuxbrew
+      # with a symlink between boots: install -d follows symlinks, and this script
+      # re-runs as root on every start, so a swapped link would hand the agent
+      # ownership of whatever it pointed at.
+      install -d -m 0755 -o root -g root /home/linuxbrew
+      if [ -L /home/linuxbrew/.linuxbrew ]; then
+        echo "/home/linuxbrew/.linuxbrew is a symlink; refusing to chown its target" >&2
+        exit 1
+      fi
       install -d -m 0755 -o agent -g "${AGENT_GROUP}" /home/linuxbrew/.linuxbrew
 
       # --- DNS -----------------------------------------------------------------
