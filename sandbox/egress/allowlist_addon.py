@@ -202,7 +202,10 @@ class AllowlistAddon:
         )
         host, port, allowed, reason = "", 0, False, "internal-error"
         try:
-            host = flow.request.pretty_host
+            # `host`, never `pretty_host`: the latter prefers the client's Host
+            # header, which the client controls, while `host` is the authority
+            # mitmproxy will actually route to.
+            host = flow.request.host
             port = flow.request.port
             allowed, reason = decide(host, port, "connect", self._rules())
             if allowed:
@@ -221,7 +224,8 @@ class AllowlistAddon:
         )
         host, port, allowed, reason = "", 0, False, "internal-error"
         try:
-            host = flow.request.pretty_host
+            # Same reason as in http_connect: judge the routing destination.
+            host = flow.request.host
             port = flow.request.port
             allowed, reason = decide(host, port, "http", self._rules())
             if allowed:

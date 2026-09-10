@@ -150,20 +150,20 @@ Unit tests for the addon's pure functions run on any machine with Python 3. Ever
 - Create: `sandbox/egress/sudoers-agent`
 - Create: `sandbox/egress/sudoers-admin`
 
-- [ ] **Step 1: Ignore scratch files**
+- [x] **Step 1: Ignore scratch files**
   Append `.tmp/` to `.gitignore` under a short comment.
 
-- [ ] **Step 2: Write the agent sudoers file**
+- [x] **Step 2: Write the agent sudoers file**
   Two lines. First denies everything: `agent ALL=(ALL:ALL) !ALL`. Second allows the Lima probe command without a password for both path spellings: `agent ALL=(root) NOPASSWD: /usr/bin/cat /mnt/lima-cidata/param.env, /bin/cat /mnt/lima-cidata/param.env`. Order matters: last match wins, so the allow comes after the deny. Add a comment explaining why the file name sorts after `90-cloud-init-users`.
 
-- [ ] **Step 3: Write the admin sudoers file**
+- [x] **Step 3: Write the admin sudoers file**
   One line: `admin ALL=(ALL:ALL) NOPASSWD:ALL`.
 
-- [ ] **Step 4: Validate syntax**
+- [x] **Step 4: Validate syntax**
   Run: `visudo -cf sandbox/egress/sudoers-agent && visudo -cf sandbox/egress/sudoers-admin`
   Expected: both report `parsed OK`. If `visudo` is unavailable on this machine, note it and rely on the in-VM check in Task 8.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
   `git commit -am "Add sudoers files for sandbox egress control"` (add the new files first).
 
 ### Task 2: nftables ruleset template
@@ -171,7 +171,7 @@ Unit tests for the addon's pure functions run on any machine with Python 3. Ever
 **Files:**
 - Create: `sandbox/egress/nftables.conf.tmpl`
 
-- [ ] **Step 1: Write the template**
+- [x] **Step 1: Write the template**
   Shebang `#!/usr/sbin/nft -f`. Then, in order: `table inet agent-egress {}`, `flush table inet agent-egress`, and the table definition with:
   - `set agent_uids { type uid; flags interval; elements = { @AGENT_UID@, @SUBUID_START@-@SUBUID_END@ } }`
   - chain `output`, `type filter hook output priority filter; policy accept;`
@@ -180,12 +180,14 @@ Unit tests for the addon's pure functions run on any machine with Python 3. Ever
   - proxy rules: accept `meta skuid @PROXY_UID@ ip daddr @RESOLVER@ udp dport 53` and the same for `tcp dport 53`; reject `meta skuid @PROXY_UID@ ip daddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, 127.0.0.0/8, 100.64.0.0/10 } counter reject`; reject `meta skuid @PROXY_UID@ ip6 daddr { ::1, fc00::/7, fe80::/10 } counter reject`.
   Comment each block with one line saying what it protects.
 
-- [ ] **Step 2: Syntax-check with placeholder values**
+- [x] **Step 2: Syntax-check with placeholder values**
   `nft -c -f` needs CAP_NET_ADMIN and will fail on this machine with `Operation not permitted`. Instead run a substitution dry run to confirm every placeholder is replaced:
   Run: `sed -e 's/@AGENT_UID@/1000/' -e 's/@SUBUID_START@/100000/' -e 's/@SUBUID_END@/165535/' -e 's/@PROXY_UID@/998/' -e 's/@RESOLVER@/192.168.5.3/' sandbox/egress/nftables.conf.tmpl | grep -c '@'`
   Expected: `0`. The real `nft -c` check happens in Task 8.
 
-- [ ] **Step 3: Commit**
+  > Deviation: the check uses `grep -c '@[A-Z_]\+@'` rather than `grep -c '@'`, because nftables set references (`@agent_uids`) legitimately contain `@` and would never reach zero. `nft -c` was also attempted here and, as the plan predicted, fails without CAP_NET_ADMIN (`unshare -rn` is unavailable in this container too), so real ruleset validation still happens in Task 8.
+
+- [x] **Step 3: Commit**
   `git add sandbox/egress/nftables.conf.tmpl && git commit -m "Add nftables egress ruleset template"`
 
 ### Task 3: mitmproxy allowlist addon (TDD)
