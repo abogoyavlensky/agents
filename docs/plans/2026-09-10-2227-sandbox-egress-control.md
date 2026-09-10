@@ -204,14 +204,14 @@ def decide(host: str, port: int, kind: str, rules: "Rules | None") -> tuple[bool
     # kind is "connect" or "http"; returns (allowed, reason)
 ```
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   `unittest` cases for `parse_rules`: comments and blanks ignored, entries lowercased and stripped of a leading dot, `*` sets `allow_all`, empty text gives no domains and `allow_all` false. Cases for `decide`: exact match allowed; subdomain allowed; sibling domain (`notgithub.com` vs `github.com`) denied; IP literal denied even with `allow_all`; `localhost`, `foo.local`, `foo.internal`, `host.lima.internal` denied even with `allow_all`; connect on port 8443 denied; http on port 8080 denied; `rules is None` denies everything with reason `no-allowlist`; each denial returns a distinct reason string.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
   Run: `cd sandbox/egress && python3 -m unittest -v test_allowlist_addon`
   Expected: FAIL with `ModuleNotFoundError` or `ImportError`.
 
-- [ ] **Step 3: Implement the addon**
+- [x] **Step 3: Implement the addon**
   Top of file: `try: from mitmproxy import ctx, http, tls` guarded by `except ImportError`, setting the names to `None`, so the module imports without mitmproxy. Implement `parse_rules` and `decide` as specified in the Design section. Then the addon class:
   - `load(loader)`: add options `allowlist` (path) and `decision_log` (path).
   - `configure(updates)`: (re)load rules; on any error set rules to `None` and log a warning.
@@ -222,16 +222,19 @@ def decide(host: str, port: int, kind: str, rules: "Rules | None") -> tuple[bool
   - `tls_clienthello(data)`: `connect_host = data.context.server.address[0]`, `sni = data.client_hello.sni`; if equal (case-insensitive) set `data.ignore_connection = True` and log `allow sni`; otherwise log `deny sni <reason>` and leave `ignore_connection` false.
   - `addons = [AllowlistAddon()]` at module bottom, created only when mitmproxy imported.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
   Run: `cd sandbox/egress && python3 -m unittest -v test_allowlist_addon`
   Expected: all PASS.
 
-- [ ] **Step 5: Byte-compile check**
+- [x] **Step 5: Byte-compile check**
   Run: `python3 -m py_compile sandbox/egress/allowlist_addon.py && echo ok`
   Expected: `ok`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
   `git add sandbox/egress/allowlist_addon.py sandbox/egress/test_allowlist_addon.py && git commit -m "Add mitmproxy allowlist addon with tests"`
+
+  > Deviation: both hooks read `flow.request.host`, not `flow.request.pretty_host` as the plan specified. Codex found that `pretty_host` prefers the client-supplied `Host` header, so `CONNECT attacker.example:443` with `Host: github.com` would have been judged against the header while mitmproxy routed to the attacker. Fixed in `84fd2f2`.
+  > Deviation: `parse_rules` also accepts a leading `*.` on an entry (`*.github.com` becomes `github.com`), with a test, so the common spelling is not silently a no-op.
 
 ### Task 4: Allowlist seed, profile script, systemd unit, verify script
 

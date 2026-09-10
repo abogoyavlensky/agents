@@ -93,7 +93,9 @@ check_direct_connection_refused() {
 # 5. The proxy refuses IP literals, so an allowlisted name is the only way out.
 check_proxy_denies_ip_literal() {
 	local out rc
-	out=$(curl -sS --max-time 5 -o /dev/null -x "$PROXY" https://127.0.0.1/ 2>&1)
+	# --noproxy '' clears NO_PROXY, which lists 127.0.0.1: curl honours the
+	# exclusion list even when -x is given, and would connect directly.
+	out=$(curl -sS --max-time 5 --noproxy '' -o /dev/null -x "$PROXY" https://127.0.0.1/ 2>&1)
 	rc=$?
 	case "$out" in
 	*403*) return 0 ;;
