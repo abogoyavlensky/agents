@@ -1,5 +1,7 @@
 # Sandbox Egress Control Implementation Plan
 
+**Status: completed** (Tasks 1-7). Task 8 is a manual checklist for the Mac and is the only work left.
+
 > **For agentic workers:** Use executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Restrict outbound network access of AI coding agents inside the Lima sandbox VM to an allowlist of hostnames, enforced by nftables and a local mitmproxy, with the `agent` user stripped of sudo.
@@ -337,11 +339,17 @@ def decide(host: str, port: int, kind: str, rules: "Rules | None") -> tuple[bool
 
 ### Task 7: Codex plan and code review checkpoint
 
-- [ ] **Step 1: Run /review-with-codex on the branch against master**
+- [x] **Step 1: Run /review-with-codex on the branch against master**
   Address real findings, especially anything about fail-open paths in the addon or the provisioning order.
 
-- [ ] **Step 2: Commit fixes**
+- [x] **Step 2: Commit fixes**
   `git commit -am "Address review findings for egress control"` if there were any.
+
+  Codex raised two P1 findings on the branch, both real, both fixed in `f84a5d3`:
+  1. `rawtcp` defaults to true in mitmproxy, so tunnel contents that look like neither HTTP nor TLS go to a raw forwarding layer that never reaches a policy hook - an allowed `CONNECT ssh.github.com:443` would have carried SSH straight out. Now `--set rawtcp=false` in the unit, and the addon forces it off in `running()` so the policy does not depend on a flag someone can edit away.
+  2. A mismatched SNI only left interception on. `ClientHelloData` has no API to terminate a connection, so the denial still works by interception - but with raw TCP off, a client that ignores certificate errors now reaches only the HTTP layer, where `request` refuses port 443. Documented in the addon.
+
+  > Deviation: the re-review after `f84a5d3` could not run - codex returned `You've hit your usage limit`. Verified by direct experiment instead (see the summary below), which is stronger evidence than a second read of the diff.
 
 ### Task 8: Manual verification on the Mac (human)
 
@@ -367,3 +375,36 @@ This task cannot run from this machine. The executor stops here and hands the ch
 
 - [ ] **Step 7: After a week**
   Build the real allowlist from the decision log, remove `*`, push it with the `tee` one-liner, rerun the verify script and the agents. Then backlog any residual items (DNS fallback if resolved had to stay, pasta host-loopback address, containers needing more than the proxy).
+
+---
+
+## Completion summary
+
+Tasks 1-7 are done and committed on `sandbox-egress-control`. Task 8 cannot run from this machine - it needs a Mac with Lima - so the checklist above is handed over unchanged.
+
+**What was implemented.** `sandbox/egress/` holds the whole mechanism: two sudoers files, the profile.d proxy environment, the nftables template, the mitmproxy allowlist addon with 34 unit tests, the allowlist seed, the systemd unit and the ten-check `agent-egress-verify`. `sandbox/agent.yaml` gained `propagateProxyEnv: false`, eight `mode: data` entries and two provisioning scripts (system: users, sudo, admin key, Homebrew prefix, DNS, nftables, mitmproxy, service; user: Maven settings, rootless Docker drop-in and client config). `sandbox/README.md` documents the model, the `lmadmin` alias, the allowlist workflow and the limitations.
+
+**Verification actually performed.** Beyond the per-task static checks, the proxy was run for real on this machine using the same mitmproxy 12.2.3 standalone build the VM installs, driving the actual addon:
+
+- allowlisted host allowed (200), non-allowlisted denied (403), subdomain allowed, IP literal denied, plain HTTP on 8443 denied on the port rule
+- SNI mismatch denied - `deny sni example.org:443 sni-mismatch:example.com`, matching what `verify.sh` check 10 greps for
+- `CONNECT ssh.github.com:443` followed by an SSH greeting returned no banner; stock mitmproxy with no addon leaked it, confirming the probe is meaningful
+- the addon forces `rawtcp=false` on its own, with the unit's flag removed
+- fail-closed confirmed: missing allowlist gives `no-allowlist`, empty gives `not-in-allowlist`, and `*` is picked up on an mtime change without a restart
+- `verify.sh` was run against the local proxy; all five proxy-dependent checks passed, and only the five that need the VM's sudo, firewall and DNS failed
+
+**Issues encountered.** Two codex findings were security bugs in the plan's own design (`pretty_host`, `rawtcp`), one was a bug in code written here (the Homebrew prefix symlink), and two were checks that would have failed on a healthy VM (`NO_PROXY` beating `-x`, `host:port` in the discovery one-liner). One plan claim was wrong about Lima and is corrected in the ruleset. The final codex re-review could not run - the account hit its usage limit - so the last fix was validated by experiment instead.
+
+**Deviations,** all recorded inline under their tasks:
+
+1. nftables output chain at `priority -140`, not `filter` (0), because Lima DNATs the resolver address at priority -100.
+2. `flow.request.host` instead of `pretty_host` in both hooks - `pretty_host` prefers the client's `Host` header.
+3. `rawtcp=false`, in the unit and forced by the addon.
+4. `/home/linuxbrew` stays root-owned; a symlinked `.linuxbrew` is refused.
+5. `verify.sh` check 5 passes `--noproxy ''`; the `check` helper captures its status with `"$fn" || rc=$?`.
+6. The README discovery one-liner strips the port and filters to allowed connect/http lines.
+7. `parse_rules` accepts a leading `*.` on an entry; admin key extraction also matches `sk-` key types.
+8. The placeholder check greps `@[A-Z_]\+@`, since `@agent_uids` legitimately contains `@`.
+9. `.gitignore` also ignores `__pycache__/`.
+
+**What the plan could have specified better.** It asserted several Lima and mitmproxy behaviours as verified when three of them were wrong or incomplete in ways that would have shipped a hole: `pretty_host` as the host to judge, a filter chain at the default priority against Lima's DNS DNAT, and no mention of `rawtcp` at all. A plan that leans this hard on a third party's internals should name the file and symbol behind each claim, so the executor re-checks the claim rather than the conclusion. It also had no step for exercising the proxy outside the VM - the standalone mitmproxy binary runs anywhere, and doing so caught more than every static check combined.
