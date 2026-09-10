@@ -1,0 +1,60 @@
+# Hostname allowlist for agent-proxy (/etc/agent-proxy/allowlist.txt).
+#
+# Format:
+#   - one hostname per line; `#` starts a comment
+#   - an entry matches itself and all of its subdomains
+#     (github.com allows api.github.com, but not notgithub.com)
+#   - a line containing only `*` allows every hostname: discovery mode
+#   - a missing, empty or unreadable file denies everything
+#   - edits are picked up automatically when the file's mtime changes
+#
+# Only HTTPS on port 443 and plain HTTP on port 80 pass, whatever is listed
+# here. IP literals, localhost and *.local / *.internal names are always denied.
+#
+# Phase one: allow everything and learn what the agents actually reach, from
+# /var/log/agent-proxy/decisions.log. Replace this with the real list once the
+# log has a week of traffic in it.
+*
+
+# Starting point after discovery. UNVERIFIED - these are the hosts we expect the
+# installed tools to need, not hosts observed in the decision log. Confirm each
+# against the log before trusting the list, then remove the `*` above.
+#
+# Anthropic / Claude Code
+#api.anthropic.com
+#claude.ai
+#platform.claude.com
+#downloads.claude.ai
+#code.claude.com
+#statsig.anthropic.com
+#sentry.io
+#
+# OpenAI / Codex
+#chatgpt.com
+#api.openai.com
+#auth.openai.com
+#
+# GitHub
+#github.com
+#api.github.com
+#objects.githubusercontent.com
+#raw.githubusercontent.com
+#codeload.github.com
+#ghcr.io
+#
+# Language package registries
+#registry.npmjs.org
+#pypi.org
+#files.pythonhosted.org
+#repo1.maven.org
+#repo.clojars.org
+#
+# Toolchain installers
+#formulae.brew.sh
+#mise.run
+#mise.jdx.dev
+#
+# Docker
+#registry-1.docker.io
+#auth.docker.io
+#production.cloudflare.docker.com

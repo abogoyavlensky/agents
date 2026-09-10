@@ -20,3 +20,4 @@ secrets*
 
 # --- scratch: agent consultation/output files ---
 .tmp/
+__pycache__/
