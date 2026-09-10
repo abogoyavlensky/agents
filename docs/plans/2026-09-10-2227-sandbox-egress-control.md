@@ -272,10 +272,10 @@ def decide(host: str, port: int, kind: str, rules: "Rules | None") -> tuple[bool
 **Files:**
 - Modify: `sandbox/agent.yaml`
 
-- [ ] **Step 1: Add Lima settings**
+- [x] **Step 1: Add Lima settings**
   Below `user:` add `propagateProxyEnv: false`. Do not add an `env:` block: the proxy variables come from the profile.d file (see Design, Tool configuration) so root's bootstrap steps never inherit them.
 
-- [ ] **Step 2: Add `mode: data` entries**
+- [x] **Step 2: Add `mode: data` entries**
   One entry per installed file, before the scripts in the `provision` list, each with `file:` pointing at `egress/<name>` (relative to the template), `path`, `owner`, `permissions`:
   - `egress/sudoers-agent` to `/etc/sudoers.d/zz-agent-egress`, `root:root`, `440`
   - `egress/sudoers-admin` to `/etc/sudoers.d/zz-admin`, `root:root`, `440`
@@ -286,7 +286,7 @@ def decide(host: str, port: int, kind: str, rules: "Rules | None") -> tuple[bool
   - `egress/agent-proxy.service` to `/etc/systemd/system/agent-proxy.service`, `644`
   - `egress/verify.sh` to `/usr/local/bin/agent-egress-verify`, `755`
 
-- [ ] **Step 3: Add the egress `mode: system` script**
+- [x] **Step 3: Add the egress `mode: system` script**
   Place it after the existing system script. `set -eux`. Sections, each idempotent:
   1. Users: `id admin || useradd -m -s /bin/bash admin`; `getent passwd agent-proxy || useradd --system --no-create-home --shell /usr/sbin/nologin agent-proxy`.
   2. Admin key: create `/home/admin/.ssh` (0700, admin); extract keys with `grep -oE '"(ssh-|ecdsa-)[^"]+"' /mnt/lima-cidata/user-data | tr -d '"'` into `authorized_keys` (0600, admin). Fail loudly if zero keys were extracted.
@@ -297,21 +297,27 @@ def decide(host: str, port: int, kind: str, rules: "Rules | None") -> tuple[bool
   7. mitmproxy: `VER=12.2.3`; `ARCH=$(uname -m)`; if `/opt/mitmproxy/$VER/mitmdump` missing, download `https://downloads.mitmproxy.org/$VER/mitmproxy-$VER-linux-$ARCH.tar.gz` to a temp dir, extract into `/opt/mitmproxy/$VER`, `ln -sfn /opt/mitmproxy/$VER /opt/mitmproxy/current`.
   8. Service: `systemctl daemon-reload`; `systemctl enable --now agent-proxy`; also `unset` any `*_proxy`/`*_PROXY` variables at the very top of this script as belt and braces, so the mitmproxy download never depends on the proxy it installs; `systemctl restart agent-proxy` only if the unit or addon changed (compare `systemctl show -p NeedDaemonReload` or simply always restart; always restarting is acceptable and simpler); wait until `ss -ltn` shows 127.0.0.1:8080 or fail after 15 seconds.
 
-- [ ] **Step 4: Add the egress `mode: user` script**
+- [x] **Step 4: Add the egress `mode: user` script**
   Place it after the existing user script. `set -eux`.
   1. Maven: if `$HOME/.m2/settings.xml` is missing, write it with one `<proxy>` for `http` and one for `https`, host 127.0.0.1, port 8080, `nonProxyHosts` `localhost|127.0.0.1`.
   2. Docker daemon drop-in: write `$HOME/.config/systemd/user/docker.service.d/agent-egress.conf` with `[Service]` and `Environment=` lines for `DOCKERD_ROOTLESS_ROOTLESSKIT_DISABLE_HOST_LOOPBACK=false`, `HTTP_PROXY`, `HTTPS_PROXY`, `http_proxy`, `https_proxy` set to `http://10.0.2.2:8080`, and `NO_PROXY`/`no_proxy` set to `localhost,127.0.0.1,::1,10.0.2.2`. Only when the content changed: `systemctl --user daemon-reload` and, if `docker.service` exists, `systemctl --user restart docker`.
   3. Docker client: merge a `proxies.default` object (`httpProxy`, `httpsProxy` = `http://10.0.2.2:8080`, `noProxy` = `localhost,127.0.0.1,::1,10.0.2.2`) into `$HOME/.docker/config.json` with `jq`, creating the file if missing.
 
-- [ ] **Step 5: Validate YAML and embedded shell**
+- [x] **Step 5: Validate YAML and embedded shell**
   Run: `python3 -c "import yaml,sys; d=yaml.safe_load(open('sandbox/agent.yaml')); print(len(d['provision']), 'provision entries'); [print(p['mode'], p.get('path','')) for p in d['provision']]"`
   Expected: the list shows the data entries, two system scripts and two user scripts.
   Then extract each script and syntax-check it:
   Run: `python3 -c "import yaml; d=yaml.safe_load(open('sandbox/agent.yaml')); [open(f'/tmp/prov{i}.sh','w').write(p['script']) for i,p in enumerate(d['provision']) if 'script' in p]" && for f in /tmp/prov*.sh; do bash -n "$f" && echo "$f ok"; done`
   Expected: every script prints `ok`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
   `git commit -am "Provision egress control in the Lima sandbox"`
+
+  > Deviation: the nftables output chain runs at `priority -140`, not `priority filter` (0). Lima's own `LIMADNS` chain DNATs `192.168.5.3:53` to `<slirp gateway>:<random port>` in the nat output hook at priority -100 (`boot.Linux/09-host-dns-setup.sh`), so at priority 0 the resolver-accept rule would never match and the private-range reject would have killed the proxy's DNS. -140 sits after conntrack (-200), so `ct state` still works, and before nat, so every `ip daddr` is the destination the socket asked for.
+  > Deviation: `/home/linuxbrew` stays root-owned and the script refuses a symlinked `.linuxbrew`. Codex found that with the agent owning the parent, it could swap `.linuxbrew` for a symlink between boots, and `install -d` (verified locally) follows symlinks - handing the agent ownership of the target on the next root re-run. Fixed in `38b2d3f`.
+  > Deviation: the admin key extraction pattern is `"(sk-)?(ssh-|ecdsa-)[^"]+"`, covering FIDO `sk-` key types as well.
+
+  Lima behaviour verified against the upstream source rather than assumed: `mode: data` `file:` entries are embedded as `content` at create time (`pkg/limatmpl/embed.go`), data files are installed with parent directories created and `overwrite: false` honoured before any provision script (`cidata.TEMPLATE.d/boot.sh`), `mode: user` scripts run as `sudo -iu agent` (a login shell, so profile.d applies), and the host agent's readiness probe really does run `sudo cat /mnt/lima-cidata/param.env` (`pkg/hostagent/requirements.go`).
 
 ### Task 6: README
 

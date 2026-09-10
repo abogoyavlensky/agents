@@ -142,7 +142,9 @@ logging every decision. After a week of real use, build the real list from the
 log and drop the `*`:
 
 ```bash
-lmadmin sudo cat /var/log/agent-proxy/decisions.log | awk '{print $4}' | sort -u
+lmadmin sudo cat /var/log/agent-proxy/decisions.log |
+  awk '$2 == "allow" && ($3 == "connect" || $3 == "http") { sub(/:[0-9]+$/, "", $4); print $4 }' |
+  sort -u
 ```
 
 Edit it in the VM with `lmadmin sudo nano /etc/agent-proxy/allowlist.txt`, or
