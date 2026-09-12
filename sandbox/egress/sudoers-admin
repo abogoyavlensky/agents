@@ -1,0 +1,3 @@
+# Installed as /etc/sudoers.d/zz-admin (root:root, 0440).
+# admin is the human maintenance account for the sandbox VM.
+admin ALL=(ALL:ALL) NOPASSWD:ALL

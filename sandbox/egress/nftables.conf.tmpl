@@ -1,0 +1,60 @@
+#!/usr/sbin/nft -f
+#
+# Template for /etc/nftables.conf. The egress provisioning script substitutes
+# @AGENT_UID@, @SUBUID_START@, @SUBUID_END@, @PROXY_UID@ and @RESOLVER@ before
+# loading it.
+#
+# Declare the table first so the flush below always has a target, then flush
+# only our own table: this makes reloading atomic and idempotent. Never
+# `flush ruleset` - Docker and other services own tables in the same kernel.
+
+table inet agent-egress {}
+flush table inet agent-egress
+
+table inet agent-egress {
+	# The agent uid plus its entire subordinate uid range. Rootless Docker
+	# gives `agent` a user namespace, and sockets created inside it are owned
+	# by a subordinate uid, which would walk straight past a single-uid match.
+	set agent_uids {
+		type uid
+		flags interval
+		elements = { @AGENT_UID@, @SUBUID_START@-@SUBUID_END@ }
+	}
+
+	chain output {
+		# Priority -140, not the usual 0: Lima's own LIMADNS chain DNATs the
+		# resolver's address in the nat output hook (priority -100), so a filter
+		# chain at priority 0 would see 192.168.5.2:<random port> instead of
+		# 192.168.5.3:53 and reject the proxy's DNS as private-network traffic.
+		# -140 sits after conntrack (-200), so `ct state` below still works, and
+		# before nat, so every `ip daddr` here is the destination as the socket
+		# asked for it.
+		type filter hook output priority -140; policy accept;
+
+		# Reply packets - including the proxy's replies to its own loopback
+		# clients - must never be judged by the rules below. Everything after
+		# this line therefore only sees new connections.
+		ct state established,related accept
+
+		# Agent: loopback only. Dev servers, nREPL, opencode's local server
+		# and the proxy all listen there.
+		meta skuid @agent_uids oifname "lo" accept
+
+		# Agent: anything leaving the VM is refused. The log is rate limited so
+		# a looping client cannot flood the journal.
+		meta skuid @agent_uids limit rate 10/second log prefix "agent-egress "
+		# TCP gets a reset so clients fail fast instead of hanging until timeout.
+		meta skuid @agent_uids meta l4proto tcp counter reject with tcp reset
+		meta skuid @agent_uids counter reject
+
+		# Proxy: DNS to the Lima resolver only. Must precede the private-range
+		# reject below, which would otherwise cover the resolver's address.
+		meta skuid @PROXY_UID@ ip daddr @RESOLVER@ udp dport 53 accept
+		meta skuid @PROXY_UID@ ip daddr @RESOLVER@ tcp dport 53 accept
+
+		# Proxy: never reach the Mac, the VM itself or any other private
+		# network, so an allowlisted name resolving inward is still refused.
+		meta skuid @PROXY_UID@ ip daddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, 127.0.0.0/8, 100.64.0.0/10 } counter reject
+		meta skuid @PROXY_UID@ ip6 daddr { ::1, fc00::/7, fe80::/10 } counter reject
+	}
+}

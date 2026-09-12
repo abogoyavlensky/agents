@@ -13,8 +13,57 @@ disk: "60GiB"
 user:
   name: agent
 
+# The Mac's own proxy variables must never reach the VM: the only proxy the
+# guest may use is the allowlisting one it runs itself.
+propagateProxyEnv: false
 
 provision:
+  # Egress control files. `mode: data` entries are embedded into the instance
+  # config at `limactl create` time and written before any provision script
+  # runs, so the sudoers rules are in force from the first boot onwards.
+  - mode: data
+    file: egress/sudoers-agent
+    path: /etc/sudoers.d/zz-agent-egress
+    owner: "root:root"
+    permissions: "0440"
+  - mode: data
+    file: egress/sudoers-admin
+    path: /etc/sudoers.d/zz-admin
+    owner: "root:root"
+    permissions: "0440"
+  - mode: data
+    file: egress/profile-agent-proxy.sh
+    path: /etc/profile.d/agent-proxy.sh
+    owner: "root:root"
+    permissions: "0644"
+  - mode: data
+    file: egress/nftables.conf.tmpl
+    path: /etc/agent-proxy/nftables.conf.tmpl
+    owner: "root:root"
+    permissions: "0644"
+  - mode: data
+    file: egress/allowlist_addon.py
+    path: /etc/agent-proxy/allowlist_addon.py
+    owner: "root:root"
+    permissions: "0644"
+  - mode: data
+    file: egress/allowlist.txt
+    path: /etc/agent-proxy/allowlist.txt
+    owner: "root:root"
+    permissions: "0644"
+    # Never clobber an allowlist that was edited inside the VM.
+    overwrite: false
+  - mode: data
+    file: egress/agent-proxy.service
+    path: /etc/systemd/system/agent-proxy.service
+    owner: "root:root"
+    permissions: "0644"
+  - mode: data
+    file: egress/verify.sh
+    path: /usr/local/bin/agent-egress-verify
+    owner: "root:root"
+    permissions: "0755"
+
   - mode: system
     script: |
       set -eux
@@ -24,6 +73,141 @@ provision:
         apt-transport-https ca-certificates wget bzip2 nano libssl-dev \
         build-essential pkg-config ripgrep zlib1g-dev procps file fzf \
         openssh-client jq gh gpg-agent iproute2
+
+  # Egress control: users, sudo, DNS, firewall and the allowlisting proxy.
+  # After the base package install so curl and iproute2 are present, and before
+  # user provisioning so the proxy is already up when the agent tools install.
+  - mode: system
+    script: |
+      set -eux
+
+      # This script must never use the proxy it is installing: on first boot it does
+      # not exist yet, and the downloads below would fail.
+      unset http_proxy https_proxy no_proxy HTTP_PROXY HTTPS_PROXY NO_PROXY || true
+
+      AGENT_GROUP="$(id -gn agent)"
+      RESOLVER="${LIMA_CIDATA_SLIRP_DNS:-192.168.5.3}"
+
+      # --- users ---------------------------------------------------------------
+      # admin: the human maintenance account, reached over ssh with -l admin.
+      id admin >/dev/null 2>&1 || useradd -m -s /bin/bash admin
+      # agent-proxy: runs mitmdump. A static uid, not DynamicUser, because the
+      # nftables rules have to name it.
+      getent passwd agent-proxy >/dev/null 2>&1 ||
+        useradd --system --no-create-home --shell /usr/sbin/nologin agent-proxy
+
+      # --- admin ssh key -------------------------------------------------------
+      # Taken from the root-only cloud-init user-data, never from the agent's own
+      # authorized_keys, which the agent can write.
+      install -d -m 0700 -o admin -g admin /home/admin/.ssh
+      ADMIN_KEYS="$(mktemp)"
+      grep -oE '"(sk-)?(ssh-|ecdsa-)[^"]+"' /mnt/lima-cidata/user-data | tr -d '"' >"${ADMIN_KEYS}"
+      if [ ! -s "${ADMIN_KEYS}" ]; then
+        echo "no ssh public keys found in /mnt/lima-cidata/user-data; admin would be unreachable" >&2
+        exit 1
+      fi
+      install -m 0600 -o admin -g admin "${ADMIN_KEYS}" /home/admin/.ssh/authorized_keys
+      rm -f "${ADMIN_KEYS}"
+
+      # --- agent sudo ----------------------------------------------------------
+      # cloud-init re-creates this grant on every boot, because Lima regenerates the
+      # instance id each start. Removing it here plus the zz- file that sorts last
+      # (last match wins in sudoers) covers both the steady state and the boot window.
+      rm -f /etc/sudoers.d/90-cloud-init-users
+      gpasswd -d agent sudo >/dev/null 2>&1 || true
+      visudo -cf /etc/sudoers.d/zz-agent-egress
+      visudo -cf /etc/sudoers.d/zz-admin
+
+      # --- homebrew prefix -----------------------------------------------------
+      # The Homebrew installer would need sudo to create this; the agent no longer
+      # has any, so pre-create it here, before user provisioning runs.
+      # /home/linuxbrew stays root-owned so the agent cannot replace .linuxbrew
+      # with a symlink between boots: install -d follows symlinks, and this script
+      # re-runs as root on every start, so a swapped link would hand the agent
+      # ownership of whatever it pointed at.
+      install -d -m 0755 -o root -g root /home/linuxbrew
+      if [ -L /home/linuxbrew/.linuxbrew ]; then
+        echo "/home/linuxbrew/.linuxbrew is a symlink; refusing to chown its target" >&2
+        exit 1
+      fi
+      install -d -m 0755 -o agent -g "${AGENT_GROUP}" /home/linuxbrew/.linuxbrew
+
+      # --- DNS -----------------------------------------------------------------
+      # systemd-resolved forwards queries under its own uid through a world-accessible
+      # socket, which is an exfiltration channel the firewall cannot see. Without it
+      # the agent's lookups go straight to UDP 53 and are rejected.
+      if systemctl is-enabled systemd-resolved >/dev/null 2>&1 ||
+        systemctl is-active systemd-resolved >/dev/null 2>&1; then
+        systemctl disable --now systemd-resolved
+      fi
+      if [ -L /etc/resolv.conf ] || ! grep -qx "nameserver ${RESOLVER}" /etc/resolv.conf 2>/dev/null; then
+        rm -f /etc/resolv.conf
+        {
+          echo "# Managed by the sandbox egress provisioning."
+          echo "nameserver ${RESOLVER}"
+        } >/etc/resolv.conf
+        chmod 0644 /etc/resolv.conf
+      fi
+
+      # --- nftables ------------------------------------------------------------
+      if ! command -v nft >/dev/null 2>&1; then
+        apt-get update
+        apt-get install -y nftables
+      fi
+      AGENT_UID="$(id -u agent)"
+      PROXY_UID="$(id -u agent-proxy)"
+      # A user namespace can own sockets as a subordinate uid, so the whole range has
+      # to be in the set or rootless containers walk past the uid match.
+      SUBUID_RANGE="$(awk -F: '$1 == "agent" { print $2, $2 + $3 - 1; exit }' /etc/subuid)"
+      if [ -z "${SUBUID_RANGE}" ]; then
+        echo "no /etc/subuid range for agent; rootless containers would bypass the uid match" >&2
+        exit 1
+      fi
+      SUBUID_START="${SUBUID_RANGE% *}"
+      SUBUID_END="${SUBUID_RANGE#* }"
+      sed \
+        -e "s/@AGENT_UID@/${AGENT_UID}/g" \
+        -e "s/@SUBUID_START@/${SUBUID_START}/g" \
+        -e "s/@SUBUID_END@/${SUBUID_END}/g" \
+        -e "s/@PROXY_UID@/${PROXY_UID}/g" \
+        -e "s/@RESOLVER@/${RESOLVER}/g" \
+        /etc/agent-proxy/nftables.conf.tmpl >/etc/nftables.conf.new
+      nft -c -f /etc/nftables.conf.new
+      install -m 0644 -o root -g root /etc/nftables.conf.new /etc/nftables.conf
+      rm -f /etc/nftables.conf.new
+      nft -f /etc/nftables.conf
+      systemctl enable nftables
+
+      # --- mitmproxy -----------------------------------------------------------
+      MITM_VERSION=12.2.3
+      MITM_ARCH="$(uname -m)"
+      if [ ! -x "/opt/mitmproxy/${MITM_VERSION}/mitmdump" ]; then
+        MITM_TMP="$(mktemp -d)"
+        curl -fsSL -o "${MITM_TMP}/mitmproxy.tar.gz" \
+          "https://downloads.mitmproxy.org/${MITM_VERSION}/mitmproxy-${MITM_VERSION}-linux-${MITM_ARCH}.tar.gz"
+        install -d "/opt/mitmproxy/${MITM_VERSION}"
+        tar -xzf "${MITM_TMP}/mitmproxy.tar.gz" -C "/opt/mitmproxy/${MITM_VERSION}"
+        rm -rf "${MITM_TMP}"
+      fi
+      ln -sfn "/opt/mitmproxy/${MITM_VERSION}" /opt/mitmproxy/current
+
+      # --- proxy service -------------------------------------------------------
+      systemctl daemon-reload
+      systemctl enable agent-proxy
+      systemctl restart agent-proxy
+      PROXY_UP=
+      for _ in $(seq 15); do
+        if ss -ltn | grep -q '127\.0\.0\.1:8080'; then
+          PROXY_UP=yes
+          break
+        fi
+        sleep 1
+      done
+      if [ -z "${PROXY_UP}" ]; then
+        journalctl -u agent-proxy -n 50 --no-pager >&2 || true
+        echo "agent-proxy is not listening on 127.0.0.1:8080" >&2
+        exit 1
+      fi
 
   - mode: user
     script: |
@@ -99,3 +283,86 @@ provision:
       if ! command -v claude >/dev/null 2>&1; then
         curl -fsSL https://claude.ai/install.sh | bash
       fi
+
+  # Egress control for the tools that ignore the proxy environment variables.
+  - mode: user
+    script: |
+      set -eux
+
+      # Rootless Docker runs dockerd in rootlesskit's network namespace, where
+      # 127.0.0.1 is the namespace's loopback, not the VM's. 10.0.2.2 is how
+      # slirp4netns exposes the VM's loopback inside that namespace.
+      DOCKER_PROXY_URL="http://10.0.2.2:8080"
+      DOCKER_NO_PROXY="localhost,127.0.0.1,::1,10.0.2.2"
+
+      # --- maven ---------------------------------------------------------------
+      # Maven's resolver, which the Clojure CLI uses, ignores both the proxy
+      # environment variables and the JVM proxy properties.
+      if [ ! -f "$HOME/.m2/settings.xml" ]; then
+        mkdir -p "$HOME/.m2"
+        cat >"$HOME/.m2/settings.xml" <<'XML'
+      <?xml version="1.0" encoding="UTF-8"?>
+      <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+        <proxies>
+          <proxy>
+            <id>agent-proxy-http</id>
+            <active>true</active>
+            <protocol>http</protocol>
+            <host>127.0.0.1</host>
+            <port>8080</port>
+            <nonProxyHosts>localhost|127.0.0.1</nonProxyHosts>
+          </proxy>
+          <proxy>
+            <id>agent-proxy-https</id>
+            <active>true</active>
+            <protocol>https</protocol>
+            <host>127.0.0.1</host>
+            <port>8080</port>
+            <nonProxyHosts>localhost|127.0.0.1</nonProxyHosts>
+          </proxy>
+        </proxies>
+      </settings>
+      XML
+      fi
+
+      # --- rootless docker daemon ----------------------------------------------
+      DOCKER_DROPIN_DIR="$HOME/.config/systemd/user/docker.service.d"
+      DOCKER_DROPIN="${DOCKER_DROPIN_DIR}/agent-egress.conf"
+      mkdir -p "${DOCKER_DROPIN_DIR}"
+      DOCKER_DROPIN_NEW="$(mktemp)"
+      cat >"${DOCKER_DROPIN_NEW}" <<CONF
+      [Service]
+      # rootlesskit hides the VM's loopback by default, which would leave the daemon
+      # with no route to the proxy at all.
+      Environment=DOCKERD_ROOTLESS_ROOTLESSKIT_DISABLE_HOST_LOOPBACK=false
+      Environment=HTTP_PROXY=${DOCKER_PROXY_URL}
+      Environment=HTTPS_PROXY=${DOCKER_PROXY_URL}
+      Environment=http_proxy=${DOCKER_PROXY_URL}
+      Environment=https_proxy=${DOCKER_PROXY_URL}
+      Environment=NO_PROXY=${DOCKER_NO_PROXY}
+      Environment=no_proxy=${DOCKER_NO_PROXY}
+      CONF
+      if cmp -s "${DOCKER_DROPIN_NEW}" "${DOCKER_DROPIN}"; then
+        rm -f "${DOCKER_DROPIN_NEW}"
+      else
+        mv "${DOCKER_DROPIN_NEW}" "${DOCKER_DROPIN}"
+        chmod 0644 "${DOCKER_DROPIN}"
+        systemctl --user daemon-reload
+        if systemctl --user cat docker.service >/dev/null 2>&1; then
+          systemctl --user restart docker || true
+        fi
+      fi
+
+      # --- docker client -------------------------------------------------------
+      # So that containers and builds inherit the proxy too.
+      mkdir -p "$HOME/.docker"
+      DOCKER_CONFIG_FILE="$HOME/.docker/config.json"
+      if [ ! -s "${DOCKER_CONFIG_FILE}" ] || ! jq -e . "${DOCKER_CONFIG_FILE}" >/dev/null 2>&1; then
+        echo '{}' >"${DOCKER_CONFIG_FILE}"
+      fi
+      DOCKER_CONFIG_NEW="$(mktemp)"
+      jq --arg proxy "${DOCKER_PROXY_URL}" --arg noproxy "${DOCKER_NO_PROXY}" \
+        '.proxies.default = {httpProxy: $proxy, httpsProxy: $proxy, noProxy: $noproxy}' \
+        "${DOCKER_CONFIG_FILE}" >"${DOCKER_CONFIG_NEW}"
+      mv "${DOCKER_CONFIG_NEW}" "${DOCKER_CONFIG_FILE}"
+      chmod 0600 "${DOCKER_CONFIG_FILE}"
