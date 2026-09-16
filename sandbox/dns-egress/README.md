@@ -20,10 +20,18 @@ cd ~/Projects && limactl edit sandbox --mount-only .:w --start
 
 ## Allowlist
 
-`/etc/agent-egress/allowlist.txt` in the VM, seeded from `agent.yaml` on first
-boot and never overwritten afterwards. One hostname per line, `#` comments, an
-entry covers itself and all subdomains. IP literals, `localhost` and
-`.local`/`.internal` names are rejected.
+`/etc/agent-egress/allowlist.txt` in the VM. One hostname per line, `#`
+comments, an entry covers itself and all subdomains. IP literals, `localhost`
+and `.local`/`.internal` names are rejected.
+
+**Default list.** On first boot the file is seeded from `agent.yaml` with what
+the installed tools need: Anthropic and Claude, OpenAI and ChatGPT, GitHub
+(including raw content and ghcr.io), Homebrew, npm and nodejs.org, PyPI, Maven
+Central, Clojars, mise, Docker Hub, and ubuntu.com for apt and time sync. The
+file is never overwritten afterwards, so edits survive reboots; a recreated VM
+starts from the seed again.
+
+**Editing.**
 
 ```bash
 lmadmin sudo nano /etc/agent-egress/allowlist.txt   # or: lmadmin sudo tee ... < my-list.txt
@@ -33,6 +41,15 @@ lmadmin sudo agent-egress-reload
 The reload takes about a second. It restarts dnsmasq and empties the set of
 admitted addresses, so a removed name stops working as soon as its open
 connections close; kept names are re-admitted on their next lookup.
+
+**Allow everything for a while.** Add a line containing only `*` and reload:
+every name resolves and every address is admitted, but each lookup is still
+logged. Use it to discover what a new tool needs, then build the list from the
+journal, delete the `*` line, and reload:
+
+```bash
+limactl shell sandbox journalctl -t dnsmasq -o cat | awk '$1 ~ /^query/ { print $2 }' | sort -u
+```
 
 See what was blocked (the agent can run these too):
 
