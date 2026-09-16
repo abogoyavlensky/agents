@@ -1,7 +1,8 @@
 # Sandbox with a DNS-derived egress allowlist
 
-`agent.yaml` here layers network control on `../nosudo/agent.yaml` (Lima's
-`base:` merges it in; same tools, same `admin` account). Not yet run on a Mac.
+`agent.yaml` here is the full sandbox in one file: the same tools and the same
+`agent`/`admin` split as `../nosudo/agent.yaml`, plus network control. Not yet
+run on a Mac.
 
 How it works: dnsmasq is the VM's only resolver and answers only for names on
 the allowlist; while answering, it adds the resolved addresses to an nftables

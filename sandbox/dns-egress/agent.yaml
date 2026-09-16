@@ -1,17 +1,21 @@
-# Egress control overlay for the no-sudo sandbox: a DNS-derived IP allowlist.
+# Lima sandbox for AI coding agents: no sudo for the agent, an admin account for
+# you, and a DNS-derived egress allowlist. Self-contained; ../nosudo/agent.yaml
+# is the same setup without the network control.
 #
-# Layers on ../nosudo/agent.yaml (Lima merges the base first). Tools need no
-# proxy settings; they resolve names and connect as usual:
+# Sudo: `agent` has none. Root work goes through `admin`, reached over ssh with
+# the key Lima already gave the VM:
+#   lmadmin() { ssh -F ~/.lima/sandbox/ssh.config -o ControlPath=none -l admin lima-sandbox "$@"; }
+#
+# Egress: tools need no proxy settings; they resolve names and connect as usual.
 #   - dnsmasq is the VM's only resolver. It forwards allowlisted names to the
 #     Lima resolver and answers NXDOMAIN for everything else, so an unlisted
 #     host fails instantly with "could not resolve" and no query leaves the VM.
 #   - While answering, dnsmasq adds each resolved address to an nftables set.
 #     The agent uid (and its rootless-Docker subuid range) may open TCP 80/443
 #     to addresses in that set only; everything else leaving the VM is rejected.
-#
-# Not covered, by design: a script that connects to an admitted CDN address and
-# names another tenant in the TLS handshake; admitted addresses stay reachable
-# until the next reload; IPv4 only outside the VM.
+#   Not covered, by design: a script that connects to an admitted CDN address
+#   and names another tenant in the TLS handshake; admitted addresses stay
+#   reachable until the next reload; IPv4 only outside the VM.
 #
 # The allowlist is /etc/agent-egress/allowlist.txt in the VM. Edit it as admin,
 # then run `agent-egress-reload`. See README.md.
@@ -19,9 +23,38 @@
 minimumLimaVersion: "2.0.0"
 
 base:
-  - ../nosudo/agent.yaml
+  - template:docker
+
+vmType: "vz"
+mountType: "virtiofs"
+
+cpus: 4
+memory: "6GiB"
+disk: "60GiB"
+
+user:
+  name: agent
 
 provision:
+  # ---- sudo policy, in force before any script runs ---------------------------
+  # Lima re-creates cloud-init's grant for the agent on every boot; these files
+  # sort after it, and in sudoers the last match wins.
+  - mode: data
+    path: /etc/sudoers.d/zz-agent
+    owner: "root:root"
+    permissions: "0440"
+    content: |
+      agent ALL=(ALL:ALL) !ALL
+      # Lima's host agent runs this over ssh on every start to see the guest is ready.
+      agent ALL=(root) NOPASSWD: /usr/bin/cat /mnt/lima-cidata/param.env, /bin/cat /mnt/lima-cidata/param.env
+  - mode: data
+    path: /etc/sudoers.d/zz-admin
+    owner: "root:root"
+    permissions: "0440"
+    content: |
+      admin ALL=(ALL:ALL) NOPASSWD:ALL
+
+  # ---- egress policy files ------------------------------------------------------
   - mode: data
     path: /etc/agent-egress/allowlist.txt
     owner: "root:root"
@@ -108,18 +141,49 @@ provision:
       nft flush set inet agent-egress allowed
       echo "agent-egress: allowing $SUMMARY"
 
+  # ---- system provisioning (root, every boot) -------------------------------------
   - mode: system
     script: |
       #!/bin/bash
       set -eux
       export DEBIAN_FRONTEND=noninteractive
       apt-get update
-      apt-get install -y nftables dnsmasq
-      echo "${LIMA_CIDATA_SLIRP_DNS:-192.168.5.3}" >/etc/agent-egress/resolver
-      # dnsmasq logs every query to the journal; let the agent see what was blocked.
+      apt-get install -y \
+        software-properties-common curl git unzip zip gnupg gnupg2 rlwrap \
+        apt-transport-https ca-certificates wget bzip2 nano libssl-dev \
+        build-essential pkg-config ripgrep zlib1g-dev procps file fzf \
+        openssh-client jq gh gpg-agent nftables dnsmasq
+
+      # --- admin: your maintenance account. Its key is taken from the root-only
+      # cloud-init data (the same key Lima uses for ssh), never from the agent's
+      # writable authorized_keys.
+      id admin >/dev/null 2>&1 || useradd -m -s /bin/bash admin
+      install -d -m 0700 -o admin -g admin /home/admin/.ssh
+      grep -oE '"(sk-)?(ssh-|ecdsa-)[^"]+"' /mnt/lima-cidata/user-data | tr -d '"' >/home/admin/.ssh/authorized_keys.new
+      [ -s /home/admin/.ssh/authorized_keys.new ] || { echo "no ssh key in cloud-init data; admin would be unreachable" >&2; exit 1; }
+      install -m 0600 -o admin -g admin /home/admin/.ssh/authorized_keys.new /home/admin/.ssh/authorized_keys
+      rm -f /home/admin/.ssh/authorized_keys.new
+
+      # --- agent: no sudo, whatever cloud-init re-grants on each boot. It may read
+      # the journal, where dnsmasq logs every lookup, to see what was blocked.
+      rm -f /etc/sudoers.d/90-cloud-init-users
+      gpasswd -d agent sudo >/dev/null 2>&1 || true
+      visudo -cf /etc/sudoers.d/zz-agent
+      visudo -cf /etc/sudoers.d/zz-admin
       usermod -aG systemd-journal agent
 
-      # --- dnsmasq replaces systemd-resolved as the only resolver --------------
+      # --- Homebrew prefix: its installer would need sudo to create this. The
+      # parent stays root-owned so the agent cannot swap .linuxbrew for a symlink
+      # between boots and have this script chown whatever it points at.
+      install -d -m 0755 -o root -g root /home/linuxbrew
+      if [ -L /home/linuxbrew/.linuxbrew ]; then
+        echo "/home/linuxbrew/.linuxbrew is a symlink; refusing to chown its target" >&2
+        exit 1
+      fi
+      install -d -m 0755 -o agent -g "$(id -gn agent)" /home/linuxbrew/.linuxbrew
+
+      # --- DNS: dnsmasq replaces systemd-resolved as the only resolver ----------
+      echo "${LIMA_CIDATA_SLIRP_DNS:-192.168.5.3}" >/etc/agent-egress/resolver
       systemctl disable --now systemd-resolved >/dev/null 2>&1 || true
       rm -f /etc/resolv.conf
       echo "nameserver 127.0.0.1" >/etc/resolv.conf
@@ -171,3 +235,60 @@ provision:
 
       # --- activate the allowlist --------------------------------------------------
       /usr/local/sbin/agent-egress-reload
+
+  # ---- user provisioning (agent, every boot) --------------------------------------
+  - mode: user
+    script: |
+      #!/bin/bash
+      set -eux
+
+      # mise (user-level, idempotent)
+      [ -x "$HOME/.local/bin/mise" ] || curl https://mise.run | sh
+
+      # Login shell: PATH for mise shims, ~/.local/bin, linuxbrew; then .bashrc.
+      cat >"$HOME/.bash_profile" <<'EOF'
+      if [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
+        export PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH"
+      fi
+      export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+
+      # Fix ghostty for non-interactive shells
+      TERM=xterm-256color
+
+      alias gs="git status"
+      alias gpo='git push origin HEAD'
+      alias gg='git log --graph --pretty=format:'\''%C(bold)%h%Creset%C(magenta)%d%Creset %s %C(yellow)<%an> %C(cyan)(%cr)%Creset'\'' --abbrev-commit --date=relative'
+      alias gcam='git commit -v -am'
+      alias gcmp='git checkout master && git pull origin master'
+      alias gcb='git checkout -b $1'
+      alias rd='revdiff "$@"'
+
+      [ -f ~/.bashrc ] && . ~/.bashrc
+      EOF
+
+      # Interactive bash: mise activate + the same PATH (idempotent appends)
+      grep -q 'mise activate bash' "$HOME/.bashrc" ||
+        echo 'eval "$($HOME/.local/bin/mise activate bash)"' >>"$HOME/.bashrc"
+      grep -q 'linuxbrew/.linuxbrew/bin' "$HOME/.bashrc" ||
+        echo 'export PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH"' >>"$HOME/.bashrc"
+      grep -q 'mise/shims' "$HOME/.bashrc" ||
+        echo 'export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"' >>"$HOME/.bashrc"
+
+      export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+
+      # Skills directories for agents
+      mkdir -p "$HOME/.claude/skills" "$HOME/.agents/skills"
+
+      # Homebrew (linuxbrew), non-interactive; the prefix was created by root above.
+      BREW_PREFIX="/home/linuxbrew/.linuxbrew"
+      if [ ! -x "$BREW_PREFIX/bin/brew" ]; then
+        NONINTERACTIVE=1 /bin/bash -c \
+          "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      fi
+      export PATH="$BREW_PREFIX/bin:$BREW_PREFIX/sbin:$PATH"
+
+      # AI agent CLIs and other tools
+      brew install anomalyco/tap/opencode
+      brew install umputun/apps/revdiff
+      curl -fsSL https://chatgpt.com/codex/install.sh | sh
+      command -v claude >/dev/null || curl -fsSL https://claude.ai/install.sh | bash
