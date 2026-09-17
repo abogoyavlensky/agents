@@ -1,0 +1,15 @@
+# Installed as /etc/sudoers.d/zz-agent-egress (root:root, 0440).
+#
+# The name must sort after 90-cloud-init-users: sudo reads /etc/sudoers.d in
+# lexical order and the LAST matching rule wins. Lima regenerates the cloud-init
+# instance id on every start, so cloud-init's user module re-runs each boot and
+# can re-create its own passwordless grant for agent. Sorting last keeps the
+# denial below authoritative even inside that boot window.
+
+# Deny everything for the agent user.
+agent ALL=(ALL:ALL) !ALL
+
+# One exception: Lima's host agent runs this over ssh on every start while
+# waiting for the guest to become ready. Both path spellings are listed because
+# the host agent's command depends on where cat lives in the guest image.
+agent ALL=(root) NOPASSWD: /usr/bin/cat /mnt/lima-cidata/param.env, /bin/cat /mnt/lima-cidata/param.env

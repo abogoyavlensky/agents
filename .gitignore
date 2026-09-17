@@ -17,3 +17,7 @@ id_ed25519*
 secrets*
 *.token
 .netrc
+
+# --- scratch: agent consultation/output files ---
+.tmp/
+__pycache__/

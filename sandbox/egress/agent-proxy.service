@@ -1,0 +1,35 @@
+[Unit]
+Description=Allowlisting egress proxy for the agent user
+After=network-online.target nftables.service
+Wants=network-online.target
+
+[Service]
+User=agent-proxy
+Group=agent-proxy
+StateDirectory=agent-proxy
+LogsDirectory=agent-proxy
+Environment=HOME=/var/lib/agent-proxy
+# No proxy variables here on purpose: this service is the proxy.
+# rawtcp=false is load-bearing, not tidiness: with mitmproxy's default of true,
+# anything inside an allowed CONNECT tunnel that does not look like HTTP or TLS
+# (an SSH greeting, say) is forwarded raw, without reaching either policy hook.
+# The addon forces it off again at startup in case this line is ever edited out.
+ExecStart=/opt/mitmproxy/current/mitmdump \
+    --listen-host 127.0.0.1 \
+    --listen-port 8080 \
+    --set confdir=/var/lib/agent-proxy \
+    --set connection_strategy=lazy \
+    --set rawtcp=false \
+    --set termlog_verbosity=warn \
+    -s /etc/agent-proxy/allowlist_addon.py \
+    --set allowlist=/etc/agent-proxy/allowlist.txt \
+    --set decision_log=/var/log/agent-proxy/decisions.log
+Restart=always
+RestartSec=2
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
