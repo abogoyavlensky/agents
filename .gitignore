@@ -17,3 +17,5 @@ id_ed25519*
 secrets*
 *.token
 .netrc
+skills/.trash/
+skills/synced/
