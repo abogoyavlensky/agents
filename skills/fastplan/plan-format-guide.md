@@ -45,21 +45,17 @@ Default pattern (TDD). For tasks without tests (config, docs, wiring), skip test
 - Modify: `exact/path/to/existing.py`
 - Test: `tests/exact/path/to/test.py`
 
-- [ ] **Step 1: Write the failing test**
-  Description of what to test and expected behavior.
-
-- [ ] **Step 2: Run test to verify it fails**
-  Run: `<exact test command>`
-  Expected: FAIL with `<expected error>`
-
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 1: Write implementation**
   Description of what to implement and key decisions.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 2: Write tests**
+
+- [ ] **Step 3: Run tests to verify it passes**
+  Description of what to test and expected behavior.
   Run: `<exact test command>`
   Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
   `git commit -m "feat: add specific feature"`
 ````
 
@@ -79,4 +75,4 @@ Each step is one action (2-5 minutes):
 - Exact commands with expected output
 - Reference relevant skills with `/` syntax
 - Use /writing-clearly skill
-- DRY, YAGNI, TDD, frequent commits
+- DRY, YAGNI, frequent commits
