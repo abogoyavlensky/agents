@@ -21,13 +21,13 @@ Do NOT write code, scaffold, or invoke any implementation skill until the user h
 
 3. **Present the whole design at once** — one message, the complete shape of the solution and the key decisions behind it. Not a detailed task list yet. (details below)
 
-4. **Approval gate** — ask whether the design looks right or any key decision needs adjusting. Iterate quickly if so. This is the main place the user steers.
+4. **Write the plan** — write the full detailed plan to `docs/plans/YYYY-MM-DD-HHMM-<topic>.md` following `plan-format-guide.md` (in this skill dir).
 
-5. **Write the plan** — once the design is agreed, write the full detailed plan to `docs/plans/YYYY-MM-DD-HHMM-<topic>.md` following `plan-format-guide.md` (in this skill dir).
+5. **Review the plan with codex (background)** — the moment the plan file exists, kick off a read-only Codex review of it in the background using the plan-document-reviewer template. It runs async while you do the hand-off, so it costs no critical-path time. Advisory, not a new gate. (details below) Max review rounds 3.
 
-6. **Review the plan with codex (background)** — the moment the plan file exists, kick off a read-only Codex review of it in the background using the plan-document-reviewer template. It runs async while you do the hand-off, so it costs no critical-path time. Advisory, not a new gate. (details below) Max review rounds 3.
+6. **Approval gate** — surface any codex findings, ask whether the design looks right or any key decision needs adjusting. Iterate quickly if so. This is the main place the user steers.
 
-7. **Hand off** — surface any codex findings, offer a final light edit pass, then commit the plan and transition to executing-plans.
+7. **Hand off** — offer a final light edit pass, then commit the plan and transition to executing-plans.
 
 ## Decide What's Yours vs. What's Theirs
 
