@@ -15,6 +15,10 @@ Load plan, review critically, execute all tasks with review checkpoints, verify 
 
 ## The Process
 
+### Step 0: Create branch
+
+1. Create a new branch for the plan's work
+
 ### Step 1: Load and Review Plan
 1. Read plan file
 2. Review critically — identify any questions or concerns about the plan itself (gaps, contradictions, ambiguity)
