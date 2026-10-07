@@ -1,0 +1,27 @@
+{
+  "skill_name": "go-style",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Build a small URL shortener service in Go. POST /links with a JSON body {\"url\": \"...\"} returns a short code; GET /{code} redirects to the original URL with 302, or 404 if the code is unknown. Store links in Postgres. Include a SQL migration for the table and tests. Module name: example.com/shortener.",
+      "expected_output": "A buildable Go module with cmd/ main using run() error, an internal/app composition root with graceful shutdown, a domain package with pure validation, a storage package with visible SQL mapping no-rows to a domain error, thin ServeMux handlers, hand-written fakes in tests; gofmt/vet/test clean.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "In this Go project, add the ability to cancel an order: POST /orders/{id}/cancel. Only pending or paid orders can be cancelled; cancelling a shipped order should return 409 Conflict, and cancelling an already-cancelled order is a no-op that returns the order. Add tests.",
+      "expected_output": "Cancel rule as a pure function/method in internal/order with a sentinel error mapped to 409 in httpapi; SQL UPDATE in sqlstore; Store interface extended minimally; stdlib-only tests with fakes; no Go APIs newer than 1.22; make check passes.",
+      "files": [
+        "evals/files/orders"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "In this Go project, add a background job that runs every 5 minutes and deletes pending orders older than 24 hours (abandoned carts). It must stop cleanly when the app shuts down, and a failed run shouldn't crash the server. Add tests where it makes sense.",
+      "expected_output": "A worker type with explicit deps and a Run(ctx) loop using a stopped ticker, started and awaited by internal/app, errors logged once per failed run; cutoff computed from an injected/passed time; SQL DELETE in sqlstore; no globals; no Go APIs newer than 1.22; make check passes.",
+      "files": [
+        "evals/files/orders"
+      ]
+    }
+  ]
+}
