@@ -1,15 +1,16 @@
 ---
 name: humble-announce
-description: Write short, humble, first-person messages about the user's own projects (clj-pulse, lgx, the Clojure Pulse extension, or any repo they maintain) for a small developer channel - a Discord, Slack or Telegram group of a few dozen people, a friends' chat, a niche forum thread. Three kinds - a first announcement ("try it"), a progress update ("what changed since last time"), and a dev-journey note ("what I'm working on or learned"). Use this whenever the user asks to announce, pre-announce, share, post an update, "tell people about" a project or something they shipped, or says "help me write a post/message about X" - even when they don't say "humble" or "announcement". Prefer it over community-post for anything in the user's own voice; leave channel pins and formal release notes to community-post. Grounds every claim in the repo's released state before writing.
+description: Write short, humble, first-person messages about the user's own projects (clj-pulse, lgx, the Clojure Pulse extension, or any repo they maintain) for a small developer channel - a Discord, Slack or Telegram group of a few dozen people, a friends' chat, a niche forum thread. Three kinds - a first announcement ("try it"), a release update ("X 0.6 is out", with a short outline of what changed since last time), and a dev-journey note ("what I'm working on or learned"). Use this whenever the user asks to announce, pre-announce, share, post an update, "tell people about" a project or something they shipped, or says "help me write a post/message about X" - even when they don't say "humble" or "announcement". Prefer it over community-post for anything in the user's own voice; leave channel pins and formal release notes to community-post. Grounds every claim in the repo's released state before writing.
 ---
 
 # Humble announce
 
 The user has a voice for these messages: plain, first person, modest, concrete,
 and short. A reader should feel a person telling friends about something they
-made, not a product being launched at them. The message in
-`references/example.md` is the calibration point; read it before writing, and
-aim for that register rather than copying its sentences.
+made, not a product being launched at them. The messages in
+`references/example.md` are the calibration points, one per kind; read the
+one for the kind you are writing, and aim for that register rather than
+copying its sentences.
 
 ## 1. Ground in the repo before writing
 
@@ -19,6 +20,11 @@ Everything in the message must be true of what a reader can install today.
   constant). Merged work that is not in a release is not released.
 - Install commands, copied verbatim from the README. This block is the first
   thing people paste, so never retype it from memory.
+- Upgrade commands, from the README or the release docs. When only install
+  commands are documented, an upgrade command you derive (`brew upgrade X`,
+  `mise up`) is a judgment call: name it in the notes under the message.
+- The tagline: the one-line description under the README title (or the
+  GitHub repo description), copied word for word.
 - What it does: the README highlights and feature list.
 - What it does not do: the README's support, status, or limitations section.
   This feeds the maturity line.
@@ -43,8 +49,9 @@ only if it is genuinely unclear.
 
 - **First announcement**: the project is new to this audience. Full shape
   below (section 4).
-- **Update**: they have seen it before; this is what changed. Shape in
-  section 5.
+- **Release update**: they have seen it before; a version is out and this is
+  what changed. Shape in section 5. This is the usual kind for a tagged
+  release.
 - **Dev-journey note**: no release to point at; a thing learned, a decision
   made, a problem being chewed on. Shape in section 6.
 
@@ -70,27 +77,38 @@ About 10 to 14 lines, in this order:
 
 One emoji at the start and one at the end, none in between.
 
-## 5. Update
+## 5. Release update
 
-About 6 to 10 lines. The reader already knows what the project is, so no
-hook re-introducing it and no install block unless the install changed.
+Short and focused: the reader should take it in at a glance. The user's
+preferred shape for a usual release, in this order:
 
-1. **What changed, in one line**: "clj-pulse 0.6 is out" or "small update on
-   lgx", then the version if there is one.
-2. **Two to four changes** as plain sentences, each with the user-visible
-   payoff, not the implementation. Keep the ones a reader of this channel
-   would notice; the rest is in the release notes link. Take them from the
-   changelog, release notes, or merged PR titles since the last tag, and
-   check each shipped in the version named.
-3. **How to get it**: the upgrade command from the README, or "already in the
-   extension" when that is the case.
-4. **Link** to the release notes or changelog.
-5. **An honest line** when there is one: a regression fixed, a thing still
-   missing, a behaviour change that could surprise.
-6. **The ask**, shorter than the first announcement's: try it, tell me.
+1. **Headline**: `<emoji> <project> <version> is out.` One emoji, here only.
+2. **Tagline**: the README tagline on the next line, word for word, so a
+   reader who missed earlier posts knows what the project is. No other
+   re-introduction.
+3. **Release target**: one line, a few words, on what this release is about
+   ("This release is about ClojureScript and more accurate references and
+   rename."). Name the theme, not every change.
+4. **Outlined changes**: a short `-` list, about three to six items, one line
+   each, lowercase start, no trailing period. Each says the user-visible
+   behaviour, with code in backticks where the reader would type it; no
+   implementation, no PR numbers. Take them from the PRs or changelog since
+   the previous tag, check each shipped in the version named, and drop what
+   only touches tests, benchmarks, or internals. Niche fixes stay in the
+   release notes.
+5. **Upgrade**: `Upgrade with <cmd> or <cmd>.` from the README or release
+   docs, or "already in the extension" when that is the case. No install
+   block unless the install changed.
+6. **Release notes**: `Release notes: <url>` on its own line, wrapped in
+   `<...>`.
 
-One emoji at the start is enough; skip the closing one if the message is
-short.
+No closing ask and no maturity line by default; add one honest line only when
+something could bite (a regression, a behaviour change). The clj-pulse 0.5.5
+message in `references/example.md` is the calibration point.
+
+When the user wants more story than a list (a big release, a change that
+needs explaining), keep the headline, tagline and links, and put two to four
+plain sentences in place of the list.
 
 **Tiny update.** A patch release or a single fix does not need the shape
 above. Three sentences and a link: what is out, what it fixes (naming the
@@ -125,7 +143,8 @@ message; each one exists because the alternative read as marketing.
   ceiling.
 - No editor or client named in the body. Link the editor-setup doc instead, so
   nobody feels excluded and the message does not read as an editor plugin ad.
-- No hype words, no exclamation marks, no feature-bullet lists.
+- No hype words, no exclamation marks. No feature-bullet lists, except the
+  change outline of a release update (section 5), which the user asked for.
 - No em-dashes. Short sentences.
 
 ## 8. Deliver

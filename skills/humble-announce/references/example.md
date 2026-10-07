@@ -22,7 +22,7 @@ Repo: <https://github.com/abogoyavlensky/clj-pulse>
 It's 0.5.x, so expect gaps (ClojureScript and Java support are partial). If you open a real project with it and something is wrong, slow, or missing, I'd really like to hear about it. 🙏
 ```
 
-## How it maps to the shape
+## How the first announcement maps to its shape
 
 - Hook: what it is (Clojure language server, Rust) and why now (wants more
   people to try it). No slogan.
@@ -43,6 +43,38 @@ It's 0.5.x, so expect gaps (ClojureScript and Java support are partial). If you 
 - Named one editor in the install instructions and gave its settings key.
 - Rounded numbers in the body ("~2 s, ~4 s, ~400 MB") instead of qualitative
   wording plus a link.
+
+## Release update
+
+The user's preferred shape for a usual release. An earlier draft told the
+same changes in three prose paragraphs with a closing ask; the user asked to
+make it "short and focused": headline, then the tagline from the repo, then a
+few words on the release target, then the outlined changes. They liked the
+result and asked for it as the standard.
+
+```markdown
+🛠️ clj-pulse 0.5.5 is out.
+A fast-starting, low-memory Clojure language server.
+
+This release is about ClojureScript and more accurate references and rename.
+
+- `.cljs` files resolve core names through `cljs.core`
+- `:require-macros` and `:refer-macros` are understood
+- a namespace with both `.clj` and `.cljs` files keeps both, and navigation picks the one matching your file
+- keywords in quoted data count as uses
+- `->User` and `User.` calls are references to the record
+- method params in `defrecord`, `deftype`, `reify` and `extend-protocol` are locals, so rename stays inside the method
+
+Upgrade with `brew upgrade clj-pulse` or `mise up`.
+Release notes: <https://github.com/abogoyavlensky/clj-pulse/releases/tag/v0.5.5>
+```
+
+What carries it: the tagline sits right under the headline with no blank
+line, so the two read as one header. The target line names the theme of the
+release, and each list item is a behaviour a user would notice, with the code
+they would type. Five merged PRs became six lines; a test-only PR and a
+benchmark PR were left out, and niche fixes (`:lint-as` to `declare`,
+`defmulti` next to `defmethod`) stayed in the release notes.
 
 ## Tiny update
 
