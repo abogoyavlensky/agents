@@ -1,0 +1,18 @@
+[package]
+name = "myapp"
+description = "Desktop app: eframe window, platform glue and the control server. Thin."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+myapp-core = { workspace = true }
+myapp-ui = { workspace = true }
+egui = { workspace = true }
+eframe = { workspace = true, features = ["default_fonts", "wgpu", "accesskit", "wayland", "x11"] }
+serde_json = { workspace = true }
+log = { workspace = true }
+env_logger = { workspace = true }

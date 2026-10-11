@@ -1,0 +1,6 @@
+# egui_kittest snapshot settings (found by walking up from the test's working directory).
+# Snapshots live next to each crate's tests: crates/ui/tests/snapshots/*.png
+output_path = "tests/snapshots"
+threshold = 0.6
+# Software rasterizers (lavapipe in CI) and GPUs anti-alias a few pixels differently.
+max_failed_pixels = 40

@@ -1,0 +1,45 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Linux packages (window libs, software Vulkan for snapshots, Xvfb)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxkbcommon-x11-0 libwayland-dev libx11-dev mesa-vulkan-drivers xvfb
+      # Pixel snapshots are compared on one platform only (references are made with Linux +
+      # lavapipe); other platforms run every test except those named `*_snapshot`.
+      - name: Quality gate
+        if: runner.os == 'Linux'
+        run: cargo xtask ci
+      - name: Tests (no pixel snapshots)
+        if: runner.os != 'Linux'
+        run: cargo test --workspace -- --skip _snapshot
+      - name: Smoke test the real window
+        if: runner.os == 'Linux'
+        run: |
+          cargo build -p myapp
+          xvfb-run -a timeout 60 ./target/debug/myapp --screenshot smoke.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-artifacts-${{ matrix.os }}
+          path: |
+            smoke.png
+            crates/*/tests/snapshots/*.new.png
+            crates/*/tests/snapshots/*.diff.png
+          if-no-files-found: ignore
