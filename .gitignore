@@ -19,3 +19,4 @@ secrets*
 .netrc
 skills/.trash/
 skills/synced/
+skills/skill-creator/scripts/__pycache__
