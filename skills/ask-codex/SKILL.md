@@ -1,6 +1,6 @@
 ---
 name: ask-codex
-description: Consult the Codex CLI (`codex exec`) as an independent second brain when the current session is stuck on a task or problem — a bug that survives repeated fix attempts, an error you can't explain, a design question you keep going back and forth on. Use when the user says "ask codex", "what does codex think", "get a second opinion", or names codex in any problem-solving context. Also use PROACTIVELY without being asked: if you have made 2-3 distinct attempts at the same problem and it still fails, or you notice you are cycling through hypotheses without new evidence, consult codex before trying again. Not for code review — that's the `review-with-codex` skill.
+description: Consult the Codex CLI (`codex exec`) as an independent second brain when the current session is stuck on a task or problem — a bug that survives repeated fix attempts, an error you can't explain, a design question you keep going back and forth on. Use when the user says "ask codex", "what does codex think", "get a second opinion", or names codex in any problem-solving context. Also use PROACTIVELY without being asked: if you have made 2-3 distinct attempts at the same problem and it still fails, or you notice you are cycling through hypotheses without new evidence, consult codex before trying again. Not for code review — that's the `panel-review` skill.
 ---
 
 # Ask Codex
@@ -161,7 +161,7 @@ prompt/answer pair is useful for debugging a bad consultation.
 ## What this skill is not
 
 - **Not code review.** "What does codex think of my changes" → use
-  `review-with-codex` (`codex exec review`).
+  `panel-review`, which runs codex as one of its reviewers.
 - **Not delegation.** Codex advises; the fix is applied and verified in
   this session, by you.
 - **Not a replacement for evidence-gathering.** If you haven't yet read

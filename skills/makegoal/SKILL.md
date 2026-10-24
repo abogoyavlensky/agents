@@ -165,11 +165,12 @@ The contract must make "done" provable, not asserted. Default to:
 
 Bake these in unless the user overrides:
 
-- **Review:** after verification passes, run the **review-with-codex** skill on the diff for a
-  second opinion. Address real correctness / API / edge-case / maintainability / test-coverage
-  findings, and confirm the implementation is **minimal** (no unrequested scope). Ignore pure
-  style nits unless they reveal a real problem. Up to **4** review/fix rounds. Per-step review
-  only if the user asked for it.
+- **Review:** after verification passes, run the **panel-review** skill (focused mode; full only
+  if the user asks) on the diff. Fix its gating findings (critical / major; confirmed, refined
+  or unverified), and confirm the implementation is **minimal** (no unrequested scope). Minors are
+  optional unless they reveal a real problem. Up to **3** review/fix rounds, with panel-review's
+  early-stop rule. An `error` result (every reviewer failed) is not a pass. Per-step review only if
+  the user asked for it.
 - **Escalation:** decide local implementation details without asking; ask only on the
   public-API / compat / behavior-conflict / diverging-semantics forks from step 2; **stop and
   ask** when blocked (missing dependency, repeated verification failure, contradictory
@@ -222,7 +223,7 @@ execute it — or want me to tweak the contract, or start the `/goal` here?"**
 
 - **Tweak:** fold in the change, rewrite the file, re-present only what changed.
 - **Run it:** the user starts the `/goal` (here or in a new session); the executing agent does
-  the work, verifies, runs review-with-codex, and writes the Result + Status back to the doc.
+  the work, verifies, runs panel-review, and writes the Result + Status back to the doc.
 - **Not now:** leave the file; you're done.
 
 ## Output templates
@@ -258,9 +259,9 @@ Run these, show the passing output, and end with a final diff summary before cla
 Before claiming done, restate each acceptance criterion in the conversation with the evidence that satisfies it — the `/goal` evaluator judges only the transcript, not this file.
 
 ## Review policy
-- After verification passes, run the **review-with-codex** skill on the diff.
-- Fix real correctness / API / edge-case / coverage findings; keep the implementation minimal.
-- Ignore pure style nits unless they reveal a real problem. Up to 4 review/fix rounds.
+- After verification passes, run the **panel-review** skill (focused mode) on the diff.
+- Fix its gating findings (critical / major); keep the implementation minimal.
+- Minors are optional unless they reveal a real problem. Up to 3 review/fix rounds.
 
 ## Escalation policy
 - Decide local implementation details yourself (naming, layout, internal structure — anything reversible).
@@ -279,7 +280,7 @@ _Filled in on completion: flip Status above to `✅ Achieved <date>`; summarize 
 **Launcher** — one `/goal` line, copy-paste ready:
 
 ```
-/goal Implement docs/goals/<YYYY-MM-DD>-<topic>.md to its Target state. Done when: you have restated each Acceptance criterion from that file in this conversation with the evidence that satisfies it, `<check 1>` and `<check 2>` are shown passing here, the review-with-codex skill has run with must-fix items resolved, and the file's Status + Result are updated. If genuinely blocked, ask me — that counts as done. Or stop after <N> turns.
+/goal Implement docs/goals/<YYYY-MM-DD>-<topic>.md to its Target state. Done when: you have restated each Acceptance criterion from that file in this conversation with the evidence that satisfies it, `<check 1>` and `<check 2>` are shown passing here, the panel-review skill has run with gating findings resolved, and the file's Status + Result are updated. If genuinely blocked, ask me — that counts as done. Or stop after <N> turns.
 ```
 
 ## Key principles
