@@ -45,13 +45,18 @@ Pick what to review from the request and the repo state, in this order:
 3. **"Branch", "this branch", "my branch"**: the branch against main. Find main with
    `git rev-parse --verify main`, falling back to `master`; if neither exists, ask.
 4. **Nothing explicit**: uncommitted changes if there are any, meaning tracked changes (`git diff HEAD`)
-   or untracked files git does not ignore (`git ls-files --others --exclude-standard`). Else the
-   branch if it is ahead of main; else ask.
+   or untracked files git does not ignore
+   (`git ls-files --others --exclude-standard -- . ':!.tmp'`). Else the branch if it is ahead of
+   main; else ask.
 
 `git diff` never shows untracked files, so whenever the scope covers the working tree, list the
 untracked, non-ignored files in `scope.md` under `new files (read in full)`. Otherwise new modules
-reach no finder and the review passes on code nobody read. Name them in the scope line too, so the
-user can drop local scratch from it. State the chosen scope and mode in one line before launching, so
+reach no finder and the review passes on code nobody read. Always use the command above with the
+`':!.tmp'` exclusion. `.tmp/` holds agent scratch: this skill's round folders, plus what ask-codex and
+other skills leave behind. In a repo that does not ignore it, that scratch would otherwise count as
+"new files". A later review would then cover scratch instead of the branch, and finders would read
+earlier rounds' or other models' raw output, which breaks their independence. Name the new files in
+the scope line too, so the user can drop local scratch from it. State the chosen scope and mode in one line before launching, so
 a wrong guess costs one correction rather than a whole review.
 
 **Record a fixed base in round 1** so later rounds review the original change together with its
@@ -65,7 +70,13 @@ fixes, not the fixes alone:
 | uncommitted | `git rev-parse HEAD` | `git diff <base>` | `git diff <base>` |
 
 Write the base as a full sha. `git diff <base>` compares against the working tree, so it covers fixes
-whether or not they were committed.
+whether or not they were committed. A root commit has no parent, so `<sha>^` fails. Use the empty
+tree as the base instead: `git hash-object -t tree /dev/null`.
+
+That later-round diff assumes the reviewed change ends at `HEAD`. When a commit or range ends earlier
+in history, `git diff <base>` would also sweep in every unrelated commit after it. In that case,
+record `HEAD` at round 1 in `scope.md` as `fixes from: <sha>`. Later rounds then review two diffs: the
+original (`git diff <base> <end>`) and the fixes (`git diff <fixes-from>`).
 
 ## Step 2: Prepare the round
 

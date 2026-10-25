@@ -259,9 +259,11 @@ Run these, show the passing output, and end with a final diff summary before cla
 Before claiming done, restate each acceptance criterion in the conversation with the evidence that satisfies it — the `/goal` evaluator judges only the transcript, not this file.
 
 ## Review policy
-- After verification passes, run the **panel-review** skill (focused mode) on the diff.
-- Fix its gating findings (critical / major); keep the implementation minimal.
+- After verification passes, run the **panel-review** skill (focused mode) on the diff, as a calling skill (it returns a gating block, not a question).
+- Fix its gating findings (critical / major; confirmed, refined or unverified); keep the implementation minimal.
 - Minors are optional unless they reveal a real problem. Up to 3 review/fix rounds.
+- An `error` result (every reviewer failed) is not a pass: stop and ask.
+- If findings still gate after the last round, or panel-review's early-stop rule fires, stop and ask with the open findings.
 
 ## Escalation policy
 - Decide local implementation details yourself (naming, layout, internal structure — anything reversible).
@@ -280,7 +282,7 @@ _Filled in on completion: flip Status above to `✅ Achieved <date>`; summarize 
 **Launcher** — one `/goal` line, copy-paste ready:
 
 ```
-/goal Implement docs/goals/<YYYY-MM-DD>-<topic>.md to its Target state. Done when: you have restated each Acceptance criterion from that file in this conversation with the evidence that satisfies it, `<check 1>` and `<check 2>` are shown passing here, the panel-review skill has run with gating findings resolved, and the file's Status + Result are updated. If genuinely blocked, ask me — that counts as done. Or stop after <N> turns.
+/goal Implement docs/goals/<YYYY-MM-DD>-<topic>.md to its Target state. Done when: you have restated each Acceptance criterion from that file in this conversation with the evidence that satisfies it, `<check 1>` and `<check 2>` are shown passing here, the last panel-review round has returned `clean`, and the file's Status + Result are updated. If genuinely blocked, ask me — that counts as done. Or stop after <N> turns.
 ```
 
 ## Key principles
