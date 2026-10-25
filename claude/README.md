@@ -33,7 +33,7 @@ jq -s '.[0] * .[1]' ~/.claude/settings.json claude/settings.json > /tmp/s.json \
 |---|---|
 | `attribution.commit` / `.pr` = `""` | No `Co-Authored-By` or session trailers — matches the repo's commit convention |
 | `permissions.defaultMode` = `auto` | Auto mode; fewer prompts on a box that exists to run agents |
-| `permissions.allow` = `Bash(codex exec:*)` | Lets the `review-with-codex` and `ask-codex` skills run. Covers `codex exec`, `exec review`, `exec resume` |
+| `permissions.allow` = `Bash(codex exec:*)` | Lets the `panel-review` and `ask-codex` skills run. Covers `codex exec`, `exec resume` |
 | `model` / `effortLevel` | Opus 5 at high effort |
 | `tui` = `fullscreen` | Flicker-free renderer |
 | `autoMemoryEnabled` = `false` | No auto-memory on shared agent boxes |

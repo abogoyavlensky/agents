@@ -1,0 +1,43 @@
+{
+  "skill_name": "panel-review",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "review my branch before I open the PR",
+      "expected_output": "Focused-mode round under .tmp/review/<branch>/01-initial/ with scope.md recording the merge-base sha, identical prompt-C.md and prompt-X.md built from preamble-code + bugs + impl, finder outputs, merged.md, verify output and report.md; chat brief ends with an AskUserQuestion naming findings by title; no files outside .tmp/ changed.",
+      "files": [],
+      "expectations": [
+        "The response states the scope (branch vs main/master) and mode (focused) before the finders run",
+        "A round folder .tmp/review/<task>/01-initial/ exists containing scope.md, context.md, prompt-C.md, prompt-X.md, finder-C.md, merged.md and report.md",
+        "prompt-C.md and prompt-X.md differ only in the final id-prefix line",
+        "Either finder-X.md holds codex findings in the template, or report.md records 'missing reviewer: X' with a reason",
+        "Every finding in report.md carries a verdict, and only critical/major confirmed, refined or unverified findings appear under Gating",
+        "The turn ends with an AskUserQuestion whose options name findings by title, and git status shows no changes outside .tmp/"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "can you do a full review of the last commit, I want every angle covered",
+      "expected_output": "Full-mode round on commit-<sha> with base <sha>^, finders B, Q, D (Claude) and X (codex adversarial), verifiers grouped by top-level directory (max 3), report with sources shown per finding.",
+      "files": [],
+      "expectations": [
+        "scope.md records base as the parent of the reviewed commit and the diff command git diff <sha>^ <sha>",
+        "prompt-B.md, prompt-Q.md, prompt-D.md and prompt-X.md exist and carry the lenses from the Modes table (Q has quality, minimal and security; X has adversarial)",
+        "At most three verify-prompt-<n>.md files exist",
+        "Findings raised by more than one finder show combined sources in the report heading"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "review the plan in docs/plans/ before I execute it",
+      "expected_output": "Plan-mode round on the plan file: prompts from preamble-plan + plan + grounding, findings located in the plan or the repo, no Pre-existing section, brief ending with AskUserQuestion.",
+      "files": [],
+      "expectations": [
+        "The mode is plan and scope.md names the plan document's absolute path, not a diff command",
+        "prompt-C.md and prompt-X.md contain the plan and grounding lenses and the plan severity bar",
+        "report.md has no Pre-existing section",
+        "No file outside .tmp/ was modified"
+      ]
+    }
+  ]
+}

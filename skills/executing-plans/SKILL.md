@@ -32,8 +32,8 @@ For each task:
 1. Mark the task as `in_progress` with TaskUpdate
 2. Follow each step exactly (plan has bite-sized steps)
 3. Run verifications as specified, commit as the task directs
-4. Kick off the `review-with-codex` skill — it runs codex CLI against the just-committed work for a second-opinion review. Wait for it to finish before moving on (blocking checkpoint).
-5. Address any **must fix** findings codex returns as a fixup commit. If the changes are non-trivial, re-run `review-with-codex` to confirm. Advisory findings: note and move on. Max review rounds 3.
+4. Run the `panel-review` skill in **focused** mode on the task's commits (the range from the commit before the task started to `HEAD`; task name `<branch>-task<N>`). Wait for it to finish before moving on (blocking checkpoint).
+5. Fix every **gating** finding it returns (critical or major; confirmed, refined or unverified) as a fixup commit, then run the next panel-review round on the same task, up to 3 rounds. Note minors and move on. Only a `clean` result lets the task complete. If the rounds run out, panel-review's early-stop rule fires with findings still gating, or the result is `error`, **stop and ask** with the open findings. Don't mark the task done over them.
 6. Mark the task as `completed` with TaskUpdate and check off its steps in the plan document
 
 ### Deviations: What You May Decide vs. When to Stop
@@ -52,6 +52,7 @@ Deviation notes surface in the completion summary, so your partner can veto afte
 - Plan has critical gaps preventing starting
 - You don't understand an instruction
 - Verification fails repeatedly
+- panel-review still reports gating findings after its last allowed round, or returns `error`
 - A deviation would change the approved design (see above)
 
 **Ask for clarification rather than guessing.**
@@ -78,7 +79,7 @@ Per-task tests passing is not the same as the feature working. Before declaring 
 ## Remember
 - Review plan critically first — including whether it's stale
 - Follow plan steps exactly; small intent-preserving deviations are yours, design-shape changes are not
-- Every task ends with a blocking codex review — address must-fix findings before starting the next task
+- Every task ends with a blocking panel-review (focused) — fix gating findings before starting the next task
 - Don't skip verifications; finish with the full suite and an end-to-end pass
 - Reference skills when plan says to
 - Stop when blocked, don't guess
