@@ -17,13 +17,13 @@ Write the shape document and nothing else: no code, no scaffolding, no commit, n
 
 A shape stays short because the project already carries most of the weight: its agent instructions (AGENTS.md, CLAUDE.md), its product rules or roadmap, its design source, and its check commands. The shape only holds the **delta** — what this batch changes and the expectations that are not written anywhere else yet.
 
-The one thing a shape must carry more of than a roadmap phase is **UX expectation**. Roadmap phases are usually backed by designs; ongoing batches mostly add interactions nobody has drawn. So for each new interaction, say the gesture, the feedback, who can see it, and what happens on failure or when empty. Leave visuals to "match the existing screens".
+The one thing a shape must carry more of than a roadmap phase is **UX expectation**. Roadmap phases are usually backed by designs; ongoing batches mostly add interactions nobody has drawn. So for each new interaction, say the gesture, the feedback, who can see it, and what happens on failure or when empty. For anything that saves or loads asynchronously, also say what happens while it is in flight: can the user leave, dismiss or keep typing, and what becomes of their input. Leave visuals to "match the existing screens".
 
 ## The process
 
 1. **Gather the intent.** A shape usually follows a discussion. Pull every agreed item, decision, rejected option and open question from the conversation. If the user hands you a fresh list instead, treat each line as an item to ground.
 
-2. **Ground every item in the repo.** Read the project's instructions and product docs, then the code each item touches, enough to state facts rather than guesses: what exists today, what is missing (an endpoint, a column, a component), and which product rules apply (permissions, plans, limits). Note any claim from the discussion that the code contradicts. Use `git rev-parse --short HEAD` for the base commit.
+2. **Ground every item in the repo.** Read the project's instructions and product docs (and `docs/KNOWLEDGE.md` if it exists), then the code each item touches, enough to state facts rather than guesses: what exists today, what is missing (an endpoint, a column, a component), and which product rules apply (permissions, plans, limits). Note any claim from the discussion that the code contradicts. Use `git rev-parse --short HEAD` for the base commit.
 
 3. **Find out how this project proves work is done.** This goes into Exit criteria, so `impl` never has to guess. Look in, roughly in this order of authority:
    - CI workflows (`.github/workflows/`, `.gitlab-ci.yml`, …) — what CI runs is the real gate;
@@ -42,7 +42,7 @@ The one thing a shape must carry more of than a roadmap phase is **UX expectatio
 
 ## Writing the items
 
-Items are the heart of the shape. Each one is a checkbox the implementer ticks and then rewrites to say what was built.
+Items are the heart of the shape. Each one is a numbered checkbox (`1. [ ] **…**`) that the implementer ticks and then rewrites to say what was built. The numbers are for tracking: `impl` names checkpoints and commits after them and keeps a count in the status line (`in progress · 3/7`). Number in a sensible build order where one exists, foundations first, but don't contort the list for it.
 
 - **One user-visible behaviour per item**, in bold, then the rule that matters: who may do it, what it affects, what must hold. "**Reorder categories.** Long-press a tile on Categories and drag it; a tap still selects. Order is per budget and kind, admin only, and decides which tiles Add shows first."
 - **At most about four lines.** An item that needs more is not decided yet: go back to the discussion or split it.

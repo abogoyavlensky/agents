@@ -6,7 +6,7 @@ Copy the skeleton, then replace every comment. Keep the headings — `impl` reli
 # Shape: <short name of the batch>
 
 **Status: shaped** · base `<short sha>` · <YYYY-MM-DD>
-<!-- impl changes this to "in progress on `<branch>`", then "done: <PR URL>". -->
+<!-- impl changes this to "in progress on `<branch>` · 0/<N>" (items done of N), then "done: <PR URL>". -->
 
 Origin: <where this came from: a discussion on <date>, backlog entries by path, a roadmap item>.
 
@@ -16,8 +16,8 @@ Origin: <where this came from: a discussion on <date>, backlog entries by path, 
 
 ## Items
 
-- [ ] **<Behaviour>.** <The rule that matters: who, what it affects, what must hold. Facts the implementer needs. At most ~4 lines.>
-- [ ] **<Behaviour>.** <…>
+1. [ ] **<Behaviour>.** <The rule that matters: who, what it affects, what must hold. Facts the implementer needs. At most ~4 lines.>
+2. [ ] **<Behaviour>.** <…>
 
 ## UX principles
 
@@ -55,12 +55,12 @@ _Filled in by `impl`: what shipped, deviations from this shape, owner checks sti
 
 Good — behaviour, rule, permission, facts:
 
-> - [ ] **Edit a budget's name, colour and icon.** The admin edits them in a "This budget" section at the top of Settings, using the category colour and icon pickers. Budgets have no colour or icon yet (every badge is a hard-coded violet house); existing budgets keep that look by default. Members see the section but cannot edit it.
+> 5. [ ] **Edit a budget's name, colour and icon.** The admin edits them in a "This budget" section at the top of Settings, using the category colour and icon pickers. Budgets have no colour or icon yet (every badge is a hard-coded violet house); existing budgets keep that look by default. Members see the section but cannot edit it.
 
 Too thin — no rule, no permission, nothing to verify:
 
-> - [ ] Budget editing.
+> 5. [ ] Budget editing.
 
 Too deep — this is a plan:
 
-> - [ ] Add `color` and `icon` columns in migration 00006, add `UpdateBudget` to the store, add `PATCH /api/budgets/{id}` in `internal/httpapi/budgets.go`, then create `BudgetBadge.tsx` and replace the six call sites…
+> 5. [ ] Add `color` and `icon` columns in migration 00006, add `UpdateBudget` to the store, add `PATCH /api/budgets/{id}` in `internal/httpapi/budgets.go`, then create `BudgetBadge.tsx` and replace the six call sites…
